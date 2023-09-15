@@ -4,6 +4,8 @@ from django.core.validators import MaxValueValidator
 
 from django.core.exceptions import ValidationError
 
+from .validators import validate_slug
+
 
 User = get_user_model()
 
@@ -43,17 +45,21 @@ class Ingredient(models.Model):
 class Tag(models.Model):
     """Тэги."""
 
-    title = models.CharField(
-        max_length=50,
+    name = models.CharField(
+        max_length=200,
         verbose_name='название тэга',
     )
-    color_code = models.CharField(
-        max_length=50,
+    color = models.CharField(
+        max_length=7,
         verbose_name='rgb код',
+        null=True,
     )
     slug = models.SlugField(
-        max_length=50,
+        max_length=200,
         verbose_name='поле слаг',
+        null=True,
+        unique=True,
+        validators=[validate_slug]
     )
 
     class Meta:
@@ -64,7 +70,7 @@ class Tag(models.Model):
 
     def __str__(self):
         """Строковое представление названия тэга."""
-        return self.title
+        return self.name
 
 
 class Recipe(models.Model):
