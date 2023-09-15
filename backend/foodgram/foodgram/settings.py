@@ -114,6 +114,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'SERIALIZERS': {
+        'user': 'api.serializers.GetUserSerializer',
         'user_create': 'api.serializers.DjoserUserCreateSerializer',
         'current_user': 'api.serializers.GetUserSerializer',
     },
