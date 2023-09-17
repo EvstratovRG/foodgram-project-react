@@ -11,16 +11,16 @@ class TagModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
     serializer_class = TagSerializer
 
 
+class IngredientModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
+    """Представление CRUD для модели Ингредиентов."""
+
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+
+
 class RecipeModelViewSet(ModelViewSet):
     """Представление CRUD для модели Рецепта."""
 
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-
-
-class IngredientModelViewSet(ModelViewSet):
-    """Представление CRUD для модели Ингредиентов."""
-
-    queryset = Ingredient.objects.all()
-    serializer_class = IngredientSerializer
 

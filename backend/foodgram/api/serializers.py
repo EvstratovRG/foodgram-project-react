@@ -63,17 +63,33 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'color', 'slug',)
 
 
-class RecipeSerializer(serializers.ModelSerializer):
-    """Сериализатор модели Рецепт."""
-
-    class Meta:
-        model = Recipe
-        fields = '__all__'
-
-
 class IngredientSerializer(serializers.ModelSerializer):
     """Сериализатор модели Ингредиент."""
 
     class Meta:
         model = Ingredient
         fields = '__all__'
+
+
+class RecipeSerializer(serializers.ModelSerializer):
+    """Сериализатор модели Рецепт."""
+
+    tags = TagSerializer()
+    author = GetUserSerializer()
+    ingredients = IngredientSerializer()
+    
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'tags',
+            'author',
+            'ingredients',
+            'is_favorited',
+            'is_in_shopping_cart',
+            'name',
+            'image',
+            'text',
+            'cooking_time',
+        )
+
