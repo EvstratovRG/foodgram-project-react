@@ -6,7 +6,7 @@ from djoser import serializers as djoser_serializers
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from recipes.models import Recipe, Tag, Ingredient
+from recipes.models import Recipe, Tag, Ingredient, RecipeIngredients
 
 
 User = get_user_model()
@@ -69,25 +69,40 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit',)
 
 
+class RecipeIngredientSerializer(serializers.ModelSerializer):
+    """Связующий сериализатор рецептов и количества ингредиентов."""
+
+    class Meta:
+        model = RecipeIngredients
+        fields = ('id', 'amount',)
+
+
+class TagIDSerializer(serializers.ModelSerializer):
+    """Сериализатор модели Тэг."""
+
+    class Meta:
+        model = Tag
+        fields = ('id',)
+
+
 class RecipeSerializer(serializers.ModelSerializer):
     """Сериализатор модели Рецепт."""
 
-    tags = TagSerializer()
-    author = GetUserSerializer()
-    ingredients = IngredientSerializer()
-    
+    tags = TagIDSerializer(many=True)
+    author = GetUserSerializer(required=True)
+    ingredients = RecipeIngredientSerializer(many=True)
 
     class Meta:
         model = Recipe
         fields = (
-            'tags',
+            'id',
             'author',
-            'ingredients',
-            'is_favorited',
-            'is_in_shopping_cart',
             'name',
             'image',
             'text',
+            'ingredients',
+            'tags',
             'cooking_time',
+            'is_favorited',
+            'is_in_shopping_cart',
         )
-

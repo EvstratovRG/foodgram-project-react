@@ -4,8 +4,14 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework import filters, status
 from django.contrib.auth import get_user_model
 
-from recipes.models import Recipe, Tag, Ingredient
-from .serializers import RecipeSerializer, TagSerializer, IngredientSerializer, GetUserSerializer
+from recipes.models import Recipe, Tag, Ingredient, RecipeIngredients
+from .serializers import (
+    RecipeSerializer,
+    TagSerializer,
+    IngredientSerializer,
+    GetUserSerializer,
+    RecipeIngredientSerializer
+)
 
 
 User = get_user_model()
@@ -42,3 +48,9 @@ class RecipeModelViewSet(ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
 
+
+class RecipeIngredientsModelViewSet(ModelViewSet):
+    """Представление для Рецепт-ингредиенты."""
+
+    queryset = RecipeIngredients.objects.all()
+    serializer_class = RecipeIngredientSerializer

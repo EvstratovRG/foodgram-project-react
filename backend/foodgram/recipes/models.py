@@ -136,12 +136,14 @@ class RecipeIngredients(models.Model):
     recipes = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        verbose_name='рецепты'
+        verbose_name='рецепты',
+        related_name='recipe_ingredients'
     )
     ingredients = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        verbose_name='ингредиенты'
+        verbose_name='ингредиенты',
+        related_name='recipe_ingredients'
     )
     amount = models.SmallIntegerField(
         validators=[MaxValueValidator(1000)],
@@ -156,6 +158,9 @@ class RecipeIngredients(models.Model):
 
         verbose_name = ("Ингредиент-рецепт")
         verbose_name_plural = ("Ингредиенты-рецепты")
+
+    def __str__(self):
+        return f'{self.recipes} - {self.ingredients}, {self.amount} шт.'
 
 
 class Follow(models.Model):
@@ -239,6 +244,8 @@ class Favorite(models.Model):
         related_name="favorite_recipes",
         verbose_name="рецепты",
     )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
