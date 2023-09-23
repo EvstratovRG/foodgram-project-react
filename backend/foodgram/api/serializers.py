@@ -21,8 +21,6 @@ class DjoserUserCreateSerializer(djoser_serializers.UserCreateSerializer):
 
 class GetUserSerializer(serializers.ModelSerializer):
 
-    # is_subscribed = serializers.BooleanField() подписан ли текущий пользователь на этого
-
     class Meta:
         model = User
         fields = ('id', 'email', 'username', 'first_name', 'last_name',)
@@ -68,7 +66,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ingredient
-        fields = '__all__'
+        fields = ('id', 'name', 'measurement_unit',)
 
 
 class RecipeSerializer(serializers.ModelSerializer):

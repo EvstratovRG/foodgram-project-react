@@ -1,14 +1,29 @@
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework import filters, status
+from django.contrib.auth import get_user_model
 
 from recipes.models import Recipe, Tag, Ingredient
-from .serializers import RecipeSerializer, TagSerializer, IngredientSerializer
+from .serializers import RecipeSerializer, TagSerializer, IngredientSerializer, GetUserSerializer
+
+
+User = get_user_model()
+
+
+class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
+    """Представление базовой модели User."""
+    queryset = User.objects.all()
+    serializer_class = GetUserSerializer
+    pagination_class = LimitOffsetPagination
+    # не работает лимитофсет на юзере
 
 
 class TagModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
     """Представление CRUD для модели Тэг."""
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    pagination_class = None
 
 
 class IngredientModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
@@ -16,6 +31,9 @@ class IngredientModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin)
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    pagination_class = LimitOffsetPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
 
 
 class RecipeModelViewSet(ModelViewSet):

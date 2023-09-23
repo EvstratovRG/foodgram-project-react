@@ -9,6 +9,7 @@ router = DefaultRouter()
 router.register(r'recipes', views.RecipeModelViewSet, basename='recipes')
 router.register(r'tags', views.TagModelViewSet, basename='tags')
 router.register(r'ingredients', views.IngredientModelViewSet, basename='ingredients')
+router.register(r'users', views.UserModelViewSet, basename='users')
 # router.register(
 #     r'recipes/(?<recipe_id>\d+)/favorites/',
 #     views.RecipeModelViewSet,

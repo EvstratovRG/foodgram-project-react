@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters',
     'djoser',
     'recipes',
     'api',
@@ -89,13 +90,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
     ),
-    # 'DEFAULT_FILTER_BACKENDS': [
-    #     'django_filters.rest_freamework.DjangoFilterBackend',
-    #     'rest_framework.filters.SearchFilter',
-    # ],
-    # 'DEFAULT_PAGINATION_CLASSES':
-    #     'rest_framework.pagination.PageNumberPagination',
-    #     'PAGE_SIZE': 6,
+    'DEFAULT_PAGINATION_CLASS':
+        'rest_framework.pagination.PageNumberPagination',
+        'PAGE_SIZE': 6,
 }
 
 

@@ -24,11 +24,8 @@ class Ingredient(models.Model):
         blank=True,
         null=True,
     )
-    amount = models.SmallIntegerField(
-        validators=[MaxValueValidator(1000)],
-        blank=True,
-        null=True,
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
@@ -60,11 +57,8 @@ class Tag(models.Model):
         unique=True,
         validators=[validate_slug]
     )
-    recipe = models.ForeignKey(
-        'Recipe',
-        on_delete=models.CASCADE,
-        verbose_name="тэг",
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
@@ -109,15 +103,22 @@ class Recipe(models.Model):
         verbose_name="ингредиент",
         through='RecipeIngredients'
     )
+    tags = models.ManyToManyField(
+        Tag, 
+        verbose_name='тэги',
+    )
     cooking_time = models.PositiveIntegerField(
         verbose_name='время приготовления'
     )
     is_favorited = models.BooleanField(
         verbose_name='является ли избранным'
     )
+    # нужны ли вообще поля любимое и карта?
     is_in_shopping_cart = models.BooleanField(
         verbose_name='находится ли в корзине'
     )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
@@ -142,6 +143,13 @@ class RecipeIngredients(models.Model):
         on_delete=models.CASCADE,
         verbose_name='ингредиенты'
     )
+    amount = models.SmallIntegerField(
+        validators=[MaxValueValidator(1000)],
+        blank=True,
+        null=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
@@ -165,6 +173,8 @@ class Follow(models.Model):
         related_name="following",
         verbose_name='подписчик'
     )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
@@ -204,7 +214,36 @@ class Purchase(models.Model):
         related_name="purchases",
         verbose_name="рецепты"
     )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Мета класс."""
         verbose_name = "Покупка"
         verbose_name_plural = "Покупки"
+
+
+class Favorite(models.Model):
+    """Избранные рецепты пользователя."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="favorites",
+        verbose_name="пользователь",
+    )
+
+    recipes = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="favorite_recipes",
+        verbose_name="рецепты",
+    )
+
+    class Meta:
+        """Мета класс."""
+        verbose_name = "избранное"
+        verbose_name_plural = "избранные"
+
+    def __str__(self):
+        return f'{self.user} likes {self.recipes}'
