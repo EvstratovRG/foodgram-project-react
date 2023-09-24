@@ -6,3 +6,4 @@ webcolors==1.11.1
 psycopg2-binary==2.9.3
 Pillow==9.0.0
 PyYAML==6.0
+django-filter==23.3

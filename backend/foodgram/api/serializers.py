@@ -6,7 +6,7 @@ from djoser import serializers as djoser_serializers
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from recipes.models import Recipe, Tag, Ingredient, RecipeIngredients
+from recipes.models import Recipe, Tag, Ingredient, RecipeIngredients, Follow
 
 
 User = get_user_model()
@@ -91,6 +91,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     tags = TagIDSerializer(many=True)
     author = GetUserSerializer(required=True)
     ingredients = RecipeIngredientSerializer(many=True)
+    image = Base64ImageFieldSerializer(required=False, allow_null=True)
 
     class Meta:
         model = Recipe
@@ -106,3 +107,41 @@ class RecipeSerializer(serializers.ModelSerializer):
             'is_favorited',
             'is_in_shopping_cart',
         )
+
+    def create(self, validated_data):
+        if 'ingredients' not in self.initial_data: # type: ignore
+            recipe = Recipe.objects.create(**validated_data)
+            return recipe
+        ingredients_data = validated_data.pop('ingredients')
+        recipe = Recipe.objects.create(**validated_data)
+        for ingredient_data in ingredients_data:
+            amount = ingredient_data.pop('amount', None)
+            current_ingredient, _ = Ingredient.objects.get_or_create(
+                **ingredient_data
+            )
+            RecipeIngredients.objects.create(
+                ingredient=current_ingredient, recipe=recipe, amount=amount,
+            )
+        return recipe
+
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        instance.image = validated_data.get('image', instance.image)
+        instance.text = validated_data.get('text', instance.text)
+        instance.cooking_time = validated_data.get('cooking_time', instance.cooking_time)
+        instance.is_favorited = validated_data.get('is_favorited', instance.is_favorited)
+        instance.is_in_shopping_cart = validated_data.get('is_in_shopping_cart', instance.is_in_shopping_cart)
+
+        if 'ingredients' not in validated_data:
+            instance.save()
+            return instance
+    
+        ingredients_data = validated_data.pop('ingredients')
+        instance.ingredients.clear()
+        for ingredient_data in ingredients_data:
+            amount = ingredient_data.pop('amount', None)
+            current_ingredient, _ = Ingredient.objects.get_or_create(**ingredient_data)
+            RecipeIngredients.objects.create(ingredient=current_ingredient, recipe=instance, amount=amount)
+
+        instance.save()
+        return instance
