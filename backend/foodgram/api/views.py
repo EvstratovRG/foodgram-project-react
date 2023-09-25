@@ -15,7 +15,7 @@ from .serializers import (
     TagSerializer,
     IngredientSerializer,
     GetUserSerializer,
-    RecipeIngredientSerializer,
+    RecipeIngredientSerializer, FollowSerializer,
 )
 
 
@@ -27,13 +27,12 @@ class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
     queryset = User.objects.all()
     serializer_class = GetUserSerializer
     pagination_class = LimitOffsetPagination
-    # не работает лимитофсет на юзере
 
     @action(detail=False, methods=['get'], url_path='subscriptions')
     def subscriptions(self, request):
         user = request.user
         subscriptions = user.following.all()
-        serializer = GetUserSerializer(subscriptions, many=True)
+        serializer = FollowSerializer(subscriptions, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'], url_path='subscribe')

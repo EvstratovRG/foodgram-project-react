@@ -6,7 +6,14 @@ from djoser import serializers as djoser_serializers
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from recipes.models import Recipe, Tag, Ingredient, RecipeIngredients, Follow
+from recipes.models import (
+    Recipe, 
+    Tag, 
+    Ingredient, 
+    RecipeIngredients, 
+    RecipeTag,
+    Follow,
+)
 
 
 User = get_user_model()
@@ -21,9 +28,23 @@ class DjoserUserCreateSerializer(djoser_serializers.UserCreateSerializer):
 
 class GetUserSerializer(serializers.ModelSerializer):
 
+    is_subscribed = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'first_name', 'last_name',)
+        fields = (
+            'id', 
+            'email', 
+            'username', 
+            'first_name', 
+            'last_name', 
+            'is_subscribed',
+        )
+    
+    def get_is_subscribed(self, obj):
+        current_user = self.context['request'].user
+        is_subscribed = obj.following.filter(user=current_user).exists()
+        return is_subscribed
 
 
 class Base64ImageFieldSerializer(serializers.ImageField):
@@ -109,10 +130,11 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        if 'ingredients' not in self.initial_data: # type: ignore
+        if 'tags' and 'ingredients' not in self.initial_data: # type: ignore
             recipe = Recipe.objects.create(**validated_data)
             return recipe
         ingredients_data = validated_data.pop('ingredients')
+        tags_data = validated_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)
         for ingredient_data in ingredients_data:
             amount = ingredient_data.pop('amount', None)
@@ -122,26 +144,91 @@ class RecipeSerializer(serializers.ModelSerializer):
             RecipeIngredients.objects.create(
                 ingredient=current_ingredient, recipe=recipe, amount=amount,
             )
+        for tag_data in tags_data:
+            current_tag, _ = Tag.objects.get_or_create(
+                **tag_data
+            )
+            RecipeTag.objects.create(
+                tag=current_tag, recipe=recipe,
+            )
         return recipe
 
     def update(self, instance, validated_data):
         instance.name = validated_data.get('name', instance.name)
         instance.image = validated_data.get('image', instance.image)
         instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get('cooking_time', instance.cooking_time)
-        instance.is_favorited = validated_data.get('is_favorited', instance.is_favorited)
-        instance.is_in_shopping_cart = validated_data.get('is_in_shopping_cart', instance.is_in_shopping_cart)
+        instance.cooking_time = validated_data.get(
+            'cooking_time', 
+            instance.cooking_time,
+        )
+        instance.is_favorited = validated_data.get(
+            'is_favorited', 
+            instance.is_favorited,
+        )
+        instance.is_in_shopping_cart = validated_data.get(
+            'is_in_shopping_cart', 
+            instance.is_in_shopping_cart,
+        )
 
-        if 'ingredients' not in validated_data:
+        if 'ingredients' and 'tags' not in validated_data:
             instance.save()
             return instance
     
         ingredients_data = validated_data.pop('ingredients')
+        tags_data = validated_data.pop('tags')
+        instance.tags.clear()
         instance.ingredients.clear()
         for ingredient_data in ingredients_data:
             amount = ingredient_data.pop('amount', None)
             current_ingredient, _ = Ingredient.objects.get_or_create(**ingredient_data)
-            RecipeIngredients.objects.create(ingredient=current_ingredient, recipe=instance, amount=amount)
+            RecipeIngredients.objects.create(
+                ingredient=current_ingredient, 
+                recipe=instance, 
+                amount=amount,
+            )
+        for tag_data in tags_data:
+            current_tag, _ = Tag.objects.get_or_create(**tag_data)
+            RecipeTag.objects.create(tag=current_tag, recipe=instance)
 
         instance.save()
         return instance
+
+
+class FollowedUsersSerializer(serializers.ModelSerializer):
+
+    is_subscribed = serializers.SerializerMethodField()
+    # recipes = RecipeSerializer(many=True)
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 
+            'username', 
+            'email', 
+            'first_name', 
+            'last_name', 
+            'is_subscribed', 
+            # 'recipes', 
+            'recipes_count',
+        )
+    
+    def get_is_subscribed(self, obj):
+        current_user = self.context['request'].user
+        print(self.context)
+        is_subscribed = obj.following.filter(user=current_user).exists()
+        return is_subscribed
+
+    def get_recipes_count(self, obj):
+        current_user = self.context['request'].user
+        recipe_count = obj.recipes.filter(author=current_user).count()
+        return recipe_count
+
+
+class FollowSerializer(serializers.ModelSerializer):
+
+    user = FollowedUsersSerializer()
+
+    class Meta:
+        model = Follow
+        fields = ('user',)

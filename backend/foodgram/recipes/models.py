@@ -106,6 +106,7 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(
         Tag, 
         verbose_name='тэги',
+        through='RecipeTag'
     )
     cooking_time = models.PositiveIntegerField(
         verbose_name='время приготовления'
@@ -254,3 +255,11 @@ class Favorite(models.Model):
 
     def __str__(self):
         return f'{self.user} likes {self.recipes}'
+
+
+class RecipeTag(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.recipe} {self.tag}'
