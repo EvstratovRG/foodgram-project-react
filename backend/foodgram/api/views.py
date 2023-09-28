@@ -9,8 +9,13 @@ from rest_framework import filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
+from django.http import FileResponse
+import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
+from reportlab.lib.pagesizes import letter
 
-from recipes.models import Recipe, Tag, Ingredient, RecipeIngredients, Follow, Favorite  # type: ignore
+from recipes.models import Recipe, Tag, Ingredient, RecipeIngredients, Follow, Favorite, Purchase  # type: ignore
 
 from .exceptions import SelfFollowException
 from .serializers import (
@@ -18,7 +23,9 @@ from .serializers import (
     TagSerializer,
     IngredientSerializer,
     GetUserSerializer,
-    RecipeIngredientSerializer, FollowSerializer,
+    RecipeIngredientSerializer,
+    NotDetailRecipeSerializer,
+    FollowSerializer,
 )
 
 
@@ -93,21 +100,16 @@ class RecipeModelViewSet(ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
 
-
-class RecipeIngredientsModelViewSet(ModelViewSet):
-    """Представление для Рецепт-ингредиенты."""
-
-    queryset = RecipeIngredients.objects.all()
-    serializer_class = RecipeIngredientSerializer
-
-    @action(detail=False, methods=['post'], url_path='favorites')
-    def favorites(self: Self, request: Request, recipe_id: int):
+    @action(detail=True, methods=['post'], url_path='favorite')
+    def favorite(self: Self, request: Request, pk: int):
         recipe = self.get_object()
         user = request.user
-        favorite = recipe.favorites.filter(user=user)
-        serializer = FavoriteSerializer(context={'request': request})
-        if favorite:
-            favorite.delete()
+        favor = recipe.favorites.filter(user=user)
+        serializer = NotDetailRecipeSerializer(
+            recipe,
+            context={'request': request})
+        if favor:
+            favor.delete()
             return Response(
                 {'detail': 'Рецепт удален из избранных.'},
                 status=status.HTTP_204_NO_CONTENT
@@ -122,24 +124,53 @@ class RecipeIngredientsModelViewSet(ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
 
-    @action(detail=False, methods=['get'], url_path='download_shopping_cart')
-    def download_shopping_cart(self: Self, request: Request, recipe_id: int):
-        user = request.user
-        subscriptions = user.follower.all().select_related('following')
-        serializer = FollowSerializer(
-            [follow.following for follow in subscriptions],
-            many=True,
-            context={'request': request}
-        )
-        return Response(serializer.data)
-
     @action(detail=False, methods=['post'], url_path='shopping_cart')
-    def shopping_cart(self: Self, request: Request, recipe_id: int):
+    def shopping_cart(self: Self, request: Request, pk: int):
+        recipe = self.get_object()
         user = request.user
-        subscriptions = user.follower.all().select_related('following')
-        serializer = FollowSerializer(
-            [follow.following for follow in subscriptions],
-            many=True,
-            context={'request': request}
-        )
-        return Response(serializer.data)
+        purchase = recipe.purchases.filter(user=user)
+        serializer = NotDetailRecipeSerializer(
+            recipe,
+            context={'request': request})
+        if purchase:
+            purchase.delete()
+            return Response(
+                {'detail': 'Рецепт удален из списка покупок.'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        else:
+            Purchase.objects.create(
+                user=user,
+                recipes=recipe,
+            )
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED,
+            )
+
+    @action(detail=False, methods=['get'], url_path='download_shopping_cart')
+    def download_shopping_cart(self: Self, request: Request):
+        # user = request.user
+        # cart_data = user.purchases.all()
+        # print(cart_data)
+        #
+        # return Response(serializer.data)
+        buf = io.BytesIO()
+        c = canvas.Canvas(buf, pagesize=letter, bottomup=0)
+        textop = c.beginText()
+        textop.setTextOrigin(inch, inch)
+        textop.setFont("Helvetica", 14)
+        lines = ["This is line 1", "This is line 2", "This is line 3"]
+        for line in lines:
+            textop.textLine(line)
+        c.drawText(textop)
+        c.showPage()
+        c.save()
+        buf.seek(0)
+        return FileResponse(buf, as_attachment=True, filename='cart_data.pdf')
+
+class RecipeIngredientsModelViewSet(ModelViewSet):
+    """Представление для Рецепт-ингредиенты."""
+
+    queryset = RecipeIngredients.objects.all()
+    serializer_class = RecipeIngredientSerializer

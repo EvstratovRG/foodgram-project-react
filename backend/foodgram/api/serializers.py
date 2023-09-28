@@ -193,7 +193,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         return instance
 
 
-class RecipeForFollowSerializer(serializers.ModelSerializer):
+class NotDetailRecipeSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False)
 
     class Meta:
@@ -204,7 +204,7 @@ class RecipeForFollowSerializer(serializers.ModelSerializer):
 class FollowSerializer(serializers.ModelSerializer):
 
     is_subscribed = serializers.SerializerMethodField()
-    recipes = RecipeForFollowSerializer(many=True, allow_null=True)
+    recipes = NotDetailRecipeSerializer(many=True, allow_null=True)
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -228,7 +228,3 @@ class FollowSerializer(serializers.ModelSerializer):
     def get_recipes_count(self, obj):
         recipe_count = Recipe.objects.filter(author=obj).count()
         return recipe_count
-
-
-class FavoriteSerializer(serializers.ModelSerializer):
-    """Сериализатор избранного."""
