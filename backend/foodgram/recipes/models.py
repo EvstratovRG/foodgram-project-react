@@ -242,7 +242,7 @@ class Favorite(models.Model):
     recipes = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name="favorite_recipes",
+        related_name="favorites",
         verbose_name="рецепты",
     )
     created_at = models.DateTimeField(auto_now_add=True)

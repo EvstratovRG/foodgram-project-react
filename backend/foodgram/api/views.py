@@ -1,3 +1,5 @@
+from typing import Self
+from rest_framework.request import Request
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.mixins import (
     ListModelMixin, RetrieveModelMixin, CreateModelMixin, DestroyModelMixin,
@@ -7,9 +9,10 @@ from rest_framework import filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 
-from recipes.models import Recipe, Tag, Ingredient, RecipeIngredients, Follow
+from recipes.models import Recipe, Tag, Ingredient, RecipeIngredients, Follow, Favorite  # type: ignore
+
+from .exceptions import SelfFollowException
 from .serializers import (
     RecipeSerializer,
     TagSerializer,
@@ -29,22 +32,26 @@ class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
     pagination_class = LimitOffsetPagination
 
     @action(detail=False, methods=['get'], url_path='subscriptions')
-    def subscriptions(self, request):
+    def subscriptions(self: Self, request: Request):
         user = request.user
-        subscriptions = user.following.all()
-        serializer = FollowSerializer(subscriptions, many=True)
+        subscriptions = user.follower.all().select_related('following')
+        serializer = FollowSerializer(
+            [follow.following for follow in subscriptions],
+            many=True,
+            context={'request': request}
+        )
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'], url_path='subscribe')
-    def subscribe(self, request, pk=None):
+    def subscribe(self: Self, request: Request, pk: int):
         user_to_subscribe_or_unsubscribe = self.get_object()
         user = request.user
         if user == user_to_subscribe_or_unsubscribe:
             return Response(
-                {'detail': 'Вы не можете подписаться на самого себя.'}, 
+                {'detail': SelfFollowException},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        follow = user_to_subscribe_or_unsubscribe.followers.filter(user=user).first()
+        follow = user_to_subscribe_or_unsubscribe.following.filter(user=user)
 
         if follow:
             follow.delete()
@@ -92,3 +99,47 @@ class RecipeIngredientsModelViewSet(ModelViewSet):
 
     queryset = RecipeIngredients.objects.all()
     serializer_class = RecipeIngredientSerializer
+
+    @action(detail=False, methods=['post'], url_path='favorites')
+    def favorites(self: Self, request: Request, recipe_id: int):
+        recipe = self.get_object()
+        user = request.user
+        favorite = recipe.favorites.filter(user=user)
+        serializer = FavoriteSerializer(context={'request': request})
+        if favorite:
+            favorite.delete()
+            return Response(
+                {'detail': 'Рецепт удален из избранных.'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        else:
+            Favorite.objects.create(
+                user=user,
+                recipes=recipe,
+            )
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED,
+            )
+
+    @action(detail=False, methods=['get'], url_path='download_shopping_cart')
+    def download_shopping_cart(self: Self, request: Request, recipe_id: int):
+        user = request.user
+        subscriptions = user.follower.all().select_related('following')
+        serializer = FollowSerializer(
+            [follow.following for follow in subscriptions],
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='shopping_cart')
+    def shopping_cart(self: Self, request: Request, recipe_id: int):
+        user = request.user
+        subscriptions = user.follower.all().select_related('following')
+        serializer = FollowSerializer(
+            [follow.following for follow in subscriptions],
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)

@@ -6,13 +6,12 @@ from djoser import serializers as djoser_serializers
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from recipes.models import (
-    Recipe, 
-    Tag, 
-    Ingredient, 
-    RecipeIngredients, 
+from recipes.models import (  # type: ignore
+    Recipe,
+    Tag,
+    Ingredient,
+    RecipeIngredients,
     RecipeTag,
-    Follow,
 )
 
 
@@ -130,7 +129,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        if 'tags' and 'ingredients' not in self.initial_data: # type: ignore
+        if 'tags' and 'ingredients' not in self.initial_data:  # type: ignore
             recipe = Recipe.objects.create(**validated_data)
             return recipe
         ingredients_data = validated_data.pop('ingredients')
@@ -194,10 +193,18 @@ class RecipeSerializer(serializers.ModelSerializer):
         return instance
 
 
-class FollowedUsersSerializer(serializers.ModelSerializer):
+class RecipeForFollowSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False)
+
+    class Meta:
+        model = Recipe
+        fields = ['id', 'name', 'image', 'cooking_time']
+
+
+class FollowSerializer(serializers.ModelSerializer):
 
     is_subscribed = serializers.SerializerMethodField()
-    # recipes = RecipeSerializer(many=True)
+    recipes = RecipeForFollowSerializer(many=True, allow_null=True)
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -209,26 +216,19 @@ class FollowedUsersSerializer(serializers.ModelSerializer):
             'first_name', 
             'last_name', 
             'is_subscribed', 
-            # 'recipes', 
+            'recipes',
             'recipes_count',
         )
     
     def get_is_subscribed(self, obj):
         current_user = self.context['request'].user
-        print(self.context)
         is_subscribed = obj.following.filter(user=current_user).exists()
         return is_subscribed
 
     def get_recipes_count(self, obj):
-        current_user = self.context['request'].user
-        recipe_count = obj.recipes.filter(author=current_user).count()
+        recipe_count = Recipe.objects.filter(author=obj).count()
         return recipe_count
 
 
-class FollowSerializer(serializers.ModelSerializer):
-
-    user = FollowedUsersSerializer()
-
-    class Meta:
-        model = Follow
-        fields = ('user',)
+class FavoriteSerializer(serializers.ModelSerializer):
+    """Сериализатор избранного."""
