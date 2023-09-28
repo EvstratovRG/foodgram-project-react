@@ -1,7 +1,10 @@
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+CSV_PATH = Path(__file__).resolve().parent.parent.parent.parent
 
 SECRET_KEY = 'django-insecure-y+8ll1p8p2b#&4bav@bgf=3&^ac@*9g6pcd!v0)cfz6_f@h4&s'
 
@@ -18,6 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters',
     'djoser',
     'recipes',
     'api',
@@ -87,13 +91,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
     ),
-    # 'DEFAULT_FILTER_BACKENDS': [
-    #     'django_filters.rest_freamework.DjangoFilterBackend',
-    #     'rest_framework.filters.SearchFilter',
-    # ],
-    # 'DEFAULT_PAGINATION_CLASSES':
-    #     'rest_framework.pagination.PageNumberPagination',
-    #     'PAGE_SIZE': 6,
+    'DEFAULT_PAGINATION_CLASS':
+        'rest_framework.pagination.PageNumberPagination',
+        'PAGE_SIZE': 6,
 }
 
 
@@ -119,3 +119,12 @@ DJOSER = {
         'current_user': 'api.serializers.GetUserSerializer',
     },
 }
+
+
+STATIC_URL = '/static/'
+
+STATIC_ROOT = BASE_DIR / 'collected_static'
+
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
