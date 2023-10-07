@@ -3,7 +3,6 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 CSV_PATH = Path(__file__).resolve().parent.parent.parent.parent
 
 SECRET_KEY = 'django-insecure-y+8ll1p8p2b#&4bav@bgf=3&^ac@*9g6pcd!v0)cfz6_f@h4&s'
@@ -21,8 +20,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'django_filters',
     'djoser',
+    'django_filters',
     'recipes',
     'api',
 ]

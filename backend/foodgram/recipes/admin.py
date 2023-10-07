@@ -1,14 +1,15 @@
 from django.contrib import admin
 
 from .models import (
-    Follow, 
-    Ingredient, 
-    Recipe, 
-    RecipeIngredients, 
-    Tag, 
+    Follow,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    Tag,
     Purchase,
-    Favorite,
+    Favorite, RecipeTag,
 )
+
 
 @admin.register(Follow)
 class FollowAdmin(admin.ModelAdmin):
@@ -62,8 +63,8 @@ class RecipeAdmin(admin.ModelAdmin):
     get_ingredients_names.short_description = 'Ingredients'
 
 
-@admin.register(RecipeIngredients)
-class RecipeIngredientsAdmin(admin.ModelAdmin):
+@admin.register(RecipeIngredient)
+class RecipeIngredientAdmin(admin.ModelAdmin):
     list_display = [
         'id', 
         'recipes', 
@@ -73,8 +74,9 @@ class RecipeIngredientsAdmin(admin.ModelAdmin):
         'updated_at'
     ]
     list_filter = ['recipes', 'ingredients', 'amount']
+
     def get_ingredients_names(self, obj):
-        return ', '.join([ingredient.name for ingredient in obj.recipeingredients.all()])
+        return ', '.join([ingredient.name for ingredient in obj.recipeingredient.all()])
     get_ingredients_names.short_description = 'ingredients'
 
 
@@ -83,6 +85,22 @@ class TagAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'color', 'slug', 'created_at', 'updated_at']
     list_filter = ['name', 'color', 'slug', 'created_at', 'updated_at']
     search_fields = ['slug']
+
+
+@admin.register(RecipeTag)
+class RecipeTagsAdmin(admin.ModelAdmin):
+    list_display = [
+        'id',
+        'recipes',
+        'tags',
+        'created_at',
+        'updated_at'
+    ]
+    list_filter = ['recipes', 'tags']
+
+    def get_tags_names(self, obj):
+        return ', '.join([tag.name for tag in obj.recipetags.all()])
+    get_tags_names.short_description = 'tags'
 
 
 @admin.register(Purchase)

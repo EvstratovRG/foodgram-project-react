@@ -9,14 +9,25 @@ from .validators import validate_slug
 User = get_user_model()
 
 
-class Ingredient(models.Model):
+class BaseFoodgramModel(models.Model):
+    """Абстрактная модель."""
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class Ingredient(BaseFoodgramModel):
     """Ингредиенты."""
 
     name = models.CharField(
         max_length=200, 
         verbose_name='Название ингредиента', 
-        blank=False, 
+        blank=False,
         null=False,
+        db_index=True,
     )
     measurement_unit = models.CharField(
         max_length=200,
@@ -24,21 +35,20 @@ class Ingredient(models.Model):
         blank=True,
         null=True,
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
 
-        verbose_name = ("Ингредиент")
-        verbose_name_plural = ("Ингредиенты")
+        ordering = ['name']
+        verbose_name = "Ингредиент"
+        verbose_name_plural = "Ингредиенты"
 
     def __str__(self):
         """Строковое представление названия ингредиента."""
-        return self.name
+        return f'{self.name} {self.measurement_unit}'
 
 
-class Tag(models.Model):
+class Tag(BaseFoodgramModel):
     """Тэги."""
 
     name = models.CharField(
@@ -57,21 +67,21 @@ class Tag(models.Model):
         unique=True,
         validators=[validate_slug]
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
 
-        verbose_name = ("Тэг")
-        verbose_name_plural = ("Тэги")
+        unique_together = ('name', 'slug')
+        ordering = ['name']
+        verbose_name = "Тэг"
+        verbose_name_plural = "Тэги"
 
     def __str__(self):
         """Строковое представление названия тэга."""
         return self.name
 
 
-class Recipe(models.Model):
+class Recipe(BaseFoodgramModel):
     """Рецепты."""
 
     author = models.ForeignKey(
@@ -83,7 +93,6 @@ class Recipe(models.Model):
     name = models.CharField(
         max_length=50,
         verbose_name='Название рецепта',
-        unique=True,
         db_index=True,
     )
     image = models.ImageField(
@@ -101,7 +110,7 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(
         Ingredient,
         verbose_name="ингредиент",
-        through='RecipeIngredients'
+        through='RecipeIngredient'
     )
     tags = models.ManyToManyField(
         Tag, 
@@ -112,59 +121,60 @@ class Recipe(models.Model):
         verbose_name='время приготовления'
     )
     is_favorited = models.BooleanField(
-        verbose_name='является ли избранным'
+        verbose_name='является ли избранным',
+        blank=True,
+        null=True,
     )
-    # нужны ли вообще поля любимое и карта?
     is_in_shopping_cart = models.BooleanField(
-        verbose_name='находится ли в корзине'
+        verbose_name='находится ли в корзине',
+        blank=True,
+        null=True,
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
 
-        verbose_name = ("рецепт")
-        verbose_name_plural = ("рецепты")
+        ordering = ['name']
+        verbose_name = "рецепт"
+        verbose_name_plural = "рецепты"
 
     def __str__(self):
         return self.name
 
 
-class RecipeIngredients(models.Model):
+class RecipeIngredient(BaseFoodgramModel):
     """Связывающая модель для ManyToMany."""
 
     recipes = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='рецепты',
-        related_name='recipe_ingredients'
+        related_name='recipe_ingredients',
     )
     ingredients = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
         verbose_name='ингредиенты',
-        related_name='recipe_ingredients'
+        related_name='recipe_ingredients',
     )
     amount = models.SmallIntegerField(
         validators=[MaxValueValidator(1000)],
         blank=True,
         null=True,
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
 
-        verbose_name = ("Ингредиент-рецепт")
-        verbose_name_plural = ("Ингредиенты-рецепты")
+        ordering = ['created_at']
+        verbose_name = "Ингредиент-рецепт"
+        verbose_name_plural = "Ингредиенты-рецепты"
 
     def __str__(self):
         return f'{self.recipes} - {self.ingredients}, {self.amount} шт.'
 
 
-class Follow(models.Model):
+class Follow(BaseFoodgramModel):
     """Подписки."""
 
     user = models.ForeignKey(
@@ -177,16 +187,15 @@ class Follow(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name="following",
-        verbose_name='подписчик'
+        verbose_name='подписчик',
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
 
-        verbose_name = ("Подписка")
-        verbose_name_plural = ("Подписки")
+        ordering = ['user']
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
 
         constraints = [
             models.UniqueConstraint(
@@ -197,39 +206,38 @@ class Follow(models.Model):
 
     def clean(self) -> None:
         if self.following == self.user:
-            raise ValidationError("Нельзя сотворить здесь!")
+            raise ValidationError("Нельзя подписаться на самого себя!")
 
     def __str__(self) -> str:
         """Строковое представление модели подписок."""
         return f'{self.user} follows {self.following}'
 
 
-class Purchase(models.Model):
+class Purchase(BaseFoodgramModel):
     """Покупки пользователя."""
 
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name="purchases",
-        verbose_name="пользователь"
+        verbose_name="пользователь",
     )
 
     recipes = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         related_name="purchases",
-        verbose_name="рецепты"
+        verbose_name="рецепты",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
+        ordering = ['user']
         verbose_name = "Покупка"
         verbose_name_plural = "Покупки"
 
 
-class Favorite(models.Model):
+class Favorite(BaseFoodgramModel):
     """Избранные рецепты пользователя."""
 
     user = models.ForeignKey(
@@ -245,11 +253,10 @@ class Favorite(models.Model):
         related_name="favorites",
         verbose_name="рецепты",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Мета класс."""
+        ordering = ['user']
         verbose_name = "избранное"
         verbose_name_plural = "избранные"
 
@@ -257,9 +264,15 @@ class Favorite(models.Model):
         return f'{self.user} likes {self.recipes}'
 
 
-class RecipeTag(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+class RecipeTag(BaseFoodgramModel):
+    recipes = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    tags = models.ForeignKey(Tag, on_delete=models.CASCADE)
+
+    class Meta:
+        """Мета класс."""
+        ordering = ['created_at']
+        verbose_name = "Тэг рецепта"
+        verbose_name_plural = "Теги рецептов"
 
     def __str__(self):
-        return f'{self.recipe} {self.tag}'
+        return f'{self.recipes} {self.tags}'

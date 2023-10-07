@@ -1,9 +1,7 @@
 from typing import Self
 from rest_framework.request import Request
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
-from rest_framework.mixins import (
-    ListModelMixin, RetrieveModelMixin, CreateModelMixin, DestroyModelMixin,
-)
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework import filters, status
 from rest_framework.decorators import action
@@ -15,7 +13,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 
-from recipes.models import Recipe, Tag, Ingredient, RecipeIngredients, Follow, Favorite, Purchase  # type: ignore
+from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient, Follow, Favorite, Purchase  # type: ignore
 
 from .exceptions import SelfFollowException
 from .serializers import (
@@ -25,7 +23,7 @@ from .serializers import (
     GetUserSerializer,
     RecipeIngredientSerializer,
     NotDetailRecipeSerializer,
-    FollowSerializer,
+    FollowSerializer, CreateRecipeSerializer,
 )
 
 
@@ -97,8 +95,23 @@ class IngredientModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin)
 class RecipeModelViewSet(ModelViewSet):
     """Представление CRUD для модели Рецепта."""
 
-    queryset = Recipe.objects.all()
+    queryset = Recipe.objects.prefetch_related('ingredients').prefetch_related('tags').all()
     serializer_class = RecipeSerializer
+    pagination_class = LimitOffsetPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('is_favorite', 'author', 'tags', 'is_in_shopping_cart')
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return RecipeSerializer
+        return CreateRecipeSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = CreateRecipeSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save(author=self.request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'], url_path='favorite')
     def favorite(self: Self, request: Request, pk: int):
@@ -150,27 +163,30 @@ class RecipeModelViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='download_shopping_cart')
     def download_shopping_cart(self: Self, request: Request):
-        # user = request.user
-        # cart_data = user.purchases.all()
-        # print(cart_data)
-        #
-        # return Response(serializer.data)
-        buf = io.BytesIO()
-        c = canvas.Canvas(buf, pagesize=letter, bottomup=0)
-        textop = c.beginText()
-        textop.setTextOrigin(inch, inch)
-        textop.setFont("Helvetica", 14)
-        lines = ["This is line 1", "This is line 2", "This is line 3"]
+        user = request.user
+        cart_data = RecipeIngredient.objects.filter(
+            recipes__purchases__user=user
+        ).select_related('ingredients')
+        buffer = io.BytesIO()
+        canvas_obj = canvas.Canvas(buffer, pagesize=letter, bottomup=0)
+        text_operation = canvas_obj.beginText()
+        text_operation.setTextOrigin(inch, inch)
+        text_operation.setFont("Helvetica", 14)
+        lines = []
+        for elem in cart_data:
+            lines.extend([elem.recipes.name, elem.ingredients.name, str(elem.amount)])
+        print(lines)
         for line in lines:
-            textop.textLine(line)
-        c.drawText(textop)
-        c.showPage()
-        c.save()
-        buf.seek(0)
-        return FileResponse(buf, as_attachment=True, filename='cart_data.pdf')
+            text_operation.textLine(line)
+        canvas_obj.drawText(text_operation)
+        canvas_obj.showPage()
+        canvas_obj.save()
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True, filename='cart_data.pdf')
 
-class RecipeIngredientsModelViewSet(ModelViewSet):
+
+class RecipeIngredientModelViewSet(ModelViewSet):
     """Представление для Рецепт-ингредиенты."""
 
-    queryset = RecipeIngredients.objects.all()
+    queryset = RecipeIngredient.objects.all()
     serializer_class = RecipeIngredientSerializer
