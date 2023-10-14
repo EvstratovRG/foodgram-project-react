@@ -1,8 +1,10 @@
 FROM python:3.11
 
-WORKDIR /app/foodgram
+WORKDIR /app
 
 RUN pip install gunicorn==20.1.0
+
+RUN python -m pip install --upgrade pip
 
 COPY requirements.txt .
 
@@ -10,4 +12,4 @@ RUN pip install -r requirements.txt --no-cache-dir
 
 COPY . .
 
-CMD ["gunicorn", "--bind", "0.0.0.0:9001", "foodgram.wsgi"]
+CMD ["gunicorn", "--bind", "0.0.0.0:9001", "foodgram.wsgi:application", "--reload"]

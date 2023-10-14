@@ -6,7 +6,7 @@ from recipes.models import Ingredient
 from django.conf import settings
 
 
-CSV_PATH = os.path.join(settings.CSV_PATH, 'data/ingredients.csv')
+CSV_PATH = os.path.join(settings.BASE_DIR, 'data/ingredients.csv')
 
 
 class Command(BaseCommand):
