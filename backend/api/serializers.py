@@ -20,6 +20,7 @@ User = get_user_model()
 
 
 class DjoserUserCreateSerializer(djoser_serializers.UserCreateSerializer):
+    """Сериализатор для списка пользователя через джосер."""
 
     class Meta(djoser_serializers.UserCreateSerializer.Meta):
         model = User
@@ -34,6 +35,7 @@ class DjoserUserCreateSerializer(djoser_serializers.UserCreateSerializer):
 
 
 class GetUserSerializer(serializers.ModelSerializer):
+    """Общий сериализатор для пользователей."""
 
     is_subscribed = serializers.SerializerMethodField()
 
@@ -49,6 +51,7 @@ class GetUserSerializer(serializers.ModelSerializer):
         )
     
     def get_is_subscribed(self, obj):
+        """Функция получения статуса подписки."""
         if self.context['request'] is None:
             return False
         current_user = self.context['request'].user
@@ -121,14 +124,6 @@ class TagIDSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
-        fields = ('id',)
-
-
-class IngredientIDSerializer(serializers.ModelSerializer):
-    """Сериализатор модели Тэг."""
-
-    class Meta:
-        model = Ingredient
         fields = ('id',)
 
 

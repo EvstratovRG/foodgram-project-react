@@ -16,10 +16,8 @@ services:
     restart: always
 
   backend:
-#    image: evstratov95/foodgram_backend
     build: ../backend
     env_file: ../.env
-#    restart: always
     volumes:
       - static:/backend_static
       - media:/media

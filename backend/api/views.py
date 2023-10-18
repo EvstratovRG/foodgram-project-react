@@ -2,6 +2,7 @@ from typing import Self
 from rest_framework.request import Request
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAdminUser
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework import filters, status
 from rest_framework.decorators import action
@@ -14,6 +15,7 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 
 from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient, Follow, Favorite, Purchase  # type: ignore
+from .permissions import OnlyRead, Author
 
 from .exceptions import SelfFollowException
 from .serializers import (
@@ -80,6 +82,7 @@ class TagModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     pagination_class = None
+    permission_classes = (OnlyRead | IsAdminUser,)
 
 
 class IngredientModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
@@ -98,10 +101,12 @@ class RecipeModelViewSet(ModelViewSet):
     queryset = Recipe.objects.prefetch_related('ingredients').prefetch_related('tags').all()
     serializer_class = RecipeSerializer
     pagination_class = LimitOffsetPagination
+    permission_classes = (OnlyRead | Author | IsAdminUser,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('is_favorite', 'author', 'tags', 'is_in_shopping_cart')
 
     def get_serializer_class(self):
+        """Выбирает сериализатор в зависимости от хттп метода."""
         if self.action == 'list':
             return RecipeSerializer
         return CreateRecipeSerializer
