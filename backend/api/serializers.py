@@ -52,9 +52,10 @@ class GetUserSerializer(serializers.ModelSerializer):
     
     def get_is_subscribed(self, obj):
         """Функция получения статуса подписки."""
-        if self.context['request'] is None:
+        if self.context['request'] is None or self.context['request'].user.is_anonymous:
             return False
         current_user = self.context['request'].user
+        print(current_user)
         is_subscribed = obj.following.filter(user=current_user).exists()
         return is_subscribed
 
@@ -153,11 +154,15 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
     def get_is_favorited(self, obj):
+        if self.context['request'] is None or self.context['request'].user.is_anonymous:
+            return False
         user = self.context['request'].user
         is_favorited = obj.favorites.filter(user=user).exists()
         return is_favorited
 
     def get_is_in_shopping_cart(self, obj):
+        if self.context['request'] is None or self.context['request'].user.is_anonymous:
+            return False
         user = self.context['request'].user
         is_in_shopping_cart = obj.purchases.filter(user=user).exists()
         return is_in_shopping_cart
@@ -166,10 +171,13 @@ class RecipeSerializer(serializers.ModelSerializer):
 class CreateIngredientFromRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор модели Ингредиент."""
     id = serializers.IntegerField()
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredients.measurement_unit',
+    )
 
     class Meta:
         model = RecipeIngredient
-        fields = ('id', 'amount',)
+        fields = ('id', 'amount', 'measurement_unit',)
 
 
 class CreateRecipeSerializer(serializers.ModelSerializer):

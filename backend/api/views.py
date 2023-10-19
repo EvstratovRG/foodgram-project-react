@@ -1,8 +1,11 @@
 from typing import Self
+
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 from rest_framework.request import Request
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework import filters, status
 from rest_framework.decorators import action
@@ -27,9 +30,13 @@ from .serializers import (
     NotDetailRecipeSerializer,
     FollowSerializer, CreateRecipeSerializer,
 )
-
+from rest_framework.filters import SearchFilter
 
 User = get_user_model()
+
+
+class IngredientFilter(SearchFilter):
+    search_param = 'name'
 
 
 class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
@@ -38,7 +45,7 @@ class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
     serializer_class = GetUserSerializer
     pagination_class = LimitOffsetPagination
 
-    @action(detail=False, methods=['get'], url_path='subscriptions')
+    @action(detail=False, methods=['get'], url_path='subscriptions', permission_classes=[IsAuthenticated])
     def subscriptions(self: Self, request: Request):
         user = request.user
         subscriptions = user.follower.all().select_related('following')
@@ -49,7 +56,7 @@ class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
         )
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'], url_path='subscribe')
+    @action(detail=True, methods=['post'], url_path='subscribe', permission_classes=[IsAuthenticated])
     def subscribe(self: Self, request: Request, pk: int):
         user_to_subscribe_or_unsubscribe = self.get_object()
         user = request.user
@@ -90,20 +97,21 @@ class IngredientModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin)
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    pagination_class = LimitOffsetPagination
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    pagination_class = None
+    filter_backends = (IngredientFilter,)
+    search_fields = ('^name',)
 
 
 class RecipeModelViewSet(ModelViewSet):
     """Представление CRUD для модели Рецепта."""
 
-    queryset = Recipe.objects.prefetch_related('ingredients').prefetch_related('tags').all()
+    queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     pagination_class = LimitOffsetPagination
     permission_classes = (OnlyRead | Author | IsAdminUser,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('is_favorite', 'author', 'tags', 'is_in_shopping_cart')
+    filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
+    filterset_fields = ('is_favorited', 'author', 'tags__name', 'is_in_shopping_cart',)
+    # search_fields = ('ingredients__name',)
 
     def get_serializer_class(self):
         """Выбирает сериализатор в зависимости от хттп метода."""
@@ -118,7 +126,7 @@ class RecipeModelViewSet(ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'], url_path='favorite')
+    @action(detail=True, methods=['post'], url_path='favorite', permission_classes=[IsAuthenticated])
     def favorite(self: Self, request: Request, pk: int):
         recipe = self.get_object()
         user = request.user
@@ -142,7 +150,7 @@ class RecipeModelViewSet(ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
 
-    @action(detail=False, methods=['post'], url_path='shopping_cart')
+    @action(detail=False, methods=['post'], url_path='shopping_cart', permission_classes=[IsAuthenticated])
     def shopping_cart(self: Self, request: Request, pk: int):
         recipe = self.get_object()
         user = request.user
@@ -166,7 +174,7 @@ class RecipeModelViewSet(ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
 
-    @action(detail=False, methods=['get'], url_path='download_shopping_cart')
+    @action(detail=False, methods=['get'], url_path='download_shopping_cart', permission_classes=[IsAuthenticated])
     def download_shopping_cart(self: Self, request: Request):
         user = request.user
         cart_data = RecipeIngredient.objects.filter(

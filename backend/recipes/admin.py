@@ -9,7 +9,6 @@ from .models import (
     Purchase,
     Favorite,
     RecipeTag,
-    User,
 )
 
 
