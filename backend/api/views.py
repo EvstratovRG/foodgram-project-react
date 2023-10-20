@@ -1,13 +1,12 @@
 from typing import Self
 
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter
 from rest_framework.request import Request
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework import filters, status
+from rest_framework import status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
@@ -30,12 +29,12 @@ from .serializers import (
     NotDetailRecipeSerializer,
     FollowSerializer, CreateRecipeSerializer,
 )
-from rest_framework.filters import SearchFilter
+
 
 User = get_user_model()
 
 
-class IngredientFilter(SearchFilter):
+class IngredientFilter(filters.SearchFilter):
     search_param = 'name'
 
 
@@ -109,22 +108,26 @@ class RecipeModelViewSet(ModelViewSet):
     serializer_class = RecipeSerializer
     pagination_class = LimitOffsetPagination
     permission_classes = (OnlyRead | Author | IsAdminUser,)
-    filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
+    filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('is_favorited', 'author', 'tags__name', 'is_in_shopping_cart',)
-    # search_fields = ('ingredients__name',)
 
     def get_serializer_class(self):
         """Выбирает сериализатор в зависимости от хттп метода."""
         if self.action == 'list':
             return RecipeSerializer
         return CreateRecipeSerializer
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({'request': self.request})
+        return context
 
-    def create(self, request, *args, **kwargs):
-        serializer = CreateRecipeSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save(author=self.request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # def create(self, request, *args, **kwargs):
+    #     serializer = CreateRecipeSerializer(data=request.data, context={'request': request})
+    #     if serializer.is_valid():
+    #         serializer.save(author=self.request.user)
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'], url_path='favorite', permission_classes=[IsAuthenticated])
     def favorite(self: Self, request: Request, pk: int):

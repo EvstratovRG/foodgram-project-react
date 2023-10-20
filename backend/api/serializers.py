@@ -37,7 +37,7 @@ class DjoserUserCreateSerializer(djoser_serializers.UserCreateSerializer):
 class GetUserSerializer(serializers.ModelSerializer):
     """Общий сериализатор для пользователей."""
 
-    is_subscribed = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -106,7 +106,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     """Связующий сериализатор рецептов и количества ингредиентов."""
 
-    amount = serializers.SerializerMethodField()
+    amount = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Ingredient
@@ -171,13 +171,10 @@ class RecipeSerializer(serializers.ModelSerializer):
 class CreateIngredientFromRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор модели Ингредиент."""
     id = serializers.IntegerField()
-    measurement_unit = serializers.ReadOnlyField(
-        source='ingredients.measurement_unit',
-    )
 
     class Meta:
         model = RecipeIngredient
-        fields = ('id', 'amount', 'measurement_unit',)
+        fields = ('id', 'amount',)
 
 
 class CreateRecipeSerializer(serializers.ModelSerializer):
@@ -191,11 +188,29 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = ('id', 'tags', 'author', 'ingredients', 'image', 'name', 'text', 'cooking_time')
 
+    def validate_ingredients(self, data):
+        ingredients = self.initial_data.get('ingredients')
+        ingredients_array = []
+        for ingredient in ingredients:
+            amount = ingredient['amount']
+            if int(amount) < 1:
+                raise serializers.ValidationError({
+                   'amount': 'Количество не может быть меньше 1'
+                })
+            if ingredient['id'] in ingredients_array:
+                raise serializers.ValidationError({
+                   'ingredient': 'Ингредиенты не дублируются'
+                })
+            ingredients_array.append(ingredient['id'])
+        return data
+
     @transaction.atomic
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
-        recipe = Recipe.objects.create(**validated_data)
+        author = self.context.get('request').user
+        print(validated_data)
+        recipe = Recipe.objects.create(author=author, **validated_data)
         for ingredient_data in ingredients_data:
             amount = ingredient_data['amount']
             ingredient_id = ingredient_data['id']
