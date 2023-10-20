@@ -250,16 +250,15 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         instance.ingredients.clear()
         for ingredient_data in ingredients_data:
             amount = ingredient_data.pop('amount', None)
-            current_ingredient, _ = Ingredient.objects.get_or_create(**ingredient_data)
+            current_ingredient = Ingredient.objects.get(id=ingredient_data['id'])
             RecipeIngredient.objects.create(
                 ingredients=current_ingredient,
                 recipes=instance,
                 amount=amount,
             )
-        for tag_data in tags_data:
-            current_tag, _ = Tag.objects.get_or_create(**tag_data)
+        for tag in tags_data:
             RecipeTag.objects.create(
-                tags=current_tag,
+                tags=tag,
                 recipes=instance
             )
 
