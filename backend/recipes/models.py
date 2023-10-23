@@ -113,7 +113,7 @@ class Recipe(BaseFoodgramModel):
         through='RecipeIngredient'
     )
     tags = models.ManyToManyField(
-        Tag, 
+        Tag,
         verbose_name='тэги',
         through='RecipeTag'
     )
@@ -210,7 +210,7 @@ class Follow(BaseFoodgramModel):
 
     def __str__(self) -> str:
         """Строковое представление модели подписок."""
-        return f'{self.user} follows {self.following}'
+        return f'{self.user} подписан на {self.following}'
 
 
 class Purchase(BaseFoodgramModel):

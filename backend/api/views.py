@@ -5,7 +5,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework import status, filters
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
@@ -30,18 +30,15 @@ from .serializers import (
     TagSerializer,
     IngredientSerializer,
     GetUserSerializer,
-    RecipeIngredientSerializer,
+
     NotDetailRecipeSerializer,
     FollowSerializer, CreateRecipeSerializer,
 )
 from .pagination import Pagination
+from .filters import IngredientFilter, RecipeFilter
 
 
 User = get_user_model()
-
-
-class IngredientFilter(filters.SearchFilter):
-    search_param = 'name'
 
 
 class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
@@ -62,12 +59,10 @@ class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
         page = self.paginate_queryset(subscriptions)
         serializer = FollowSerializer(
             page,
-            # [follow.following for follow in subscriptions],
             many=True,
             context={'request': request}
         )
         return self.get_paginated_response(serializer.data)
-        # return Response(serializer.data)
 
     @action(
             detail=True,
@@ -140,12 +135,7 @@ class RecipeModelViewSet(ModelViewSet):
     pagination_class = Pagination
     permission_classes = (OnlyRead | Author | IsAdminUser,)
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = (
-        'is_favorited',
-        'author',
-        'tags__name',
-        'is_in_shopping_cart',
-    )
+    filter_class = RecipeFilter
 
     def get_serializer_class(self):
         """Выбирает сериализатор в зависимости от хттп метода."""
@@ -162,7 +152,7 @@ class RecipeModelViewSet(ModelViewSet):
             detail=True,
             methods=['post', 'delete'],
             url_path='favorite',
-            permission_classes=[IsAuthenticated],
+            permission_classes=(IsAuthenticated, Author,),
         )
     def favorite(self: Self, request: Request, pk: int):
         recipe = self.get_object()
@@ -193,7 +183,7 @@ class RecipeModelViewSet(ModelViewSet):
     @action(
             detail=True,
             methods=['post', 'delete'],
-            url_path='recipe-shopping-cart',
+            url_path='shopping_cart',
             permission_classes=[IsAuthenticated],
         )
     def shopping_cart(self: Self, request: Request, pk: int):
