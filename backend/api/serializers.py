@@ -5,9 +5,11 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from djoser import serializers as djoser_serializers
 from django.contrib.auth import get_user_model
-from rest_framework import serializers
+from rest_framework.validators import ValidationError
+from rest_framework import serializers, status
 
 from recipes.models import (  # type: ignore
+    Follow,
     Recipe,  # type: ignore
     Tag,  # type: ignore
     Ingredient,  # type: ignore
@@ -278,29 +280,16 @@ class NotDetailRecipeSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'image', 'cooking_time']
 
 
-class FollowSerializer(serializers.ModelSerializer):
+class FollowSerializer(GetUserSerializer):
 
-    is_subscribed = serializers.SerializerMethodField()
     recipes = NotDetailRecipeSerializer(many=True, allow_null=True)
     recipes_count = serializers.SerializerMethodField()
 
-    class Meta:
-        model = User
-        fields = (
-            'id', 
-            'username', 
-            'email', 
-            'first_name', 
-            'last_name', 
-            'is_subscribed', 
+    class Meta(GetUserSerializer.Meta):
+        fields = GetUserSerializer.Meta.fields + (
             'recipes',
             'recipes_count',
         )
-    
-    def get_is_subscribed(self, obj):
-        current_user = self.context['request'].user
-        is_subscribed = obj.following.filter(user=current_user).exists()
-        return is_subscribed
 
     def get_recipes_count(self, obj):
         recipe_count = Recipe.objects.filter(author=obj).count()
