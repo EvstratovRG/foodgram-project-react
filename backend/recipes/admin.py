@@ -9,7 +9,16 @@ from .models import (
     Purchase,
     Favorite,
     RecipeTag,
+    User,
 )
+
+
+admin.site.unregister(User)
+
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    list_display = ['pk', 'username', 'email']
 
 
 @admin.register(Follow)

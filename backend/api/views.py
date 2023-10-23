@@ -71,34 +71,42 @@ class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
 
     @action(
             detail=True,
-            methods=['post'],
+            methods=['post', 'delete'],
             url_path='subscribe',
             permission_classes=[IsAuthenticated],
         )
     def subscribe(self: Self, request: Request, pk: int):
-        user_to_subscribe_or_unsubscribe = self.get_object()
+        following = self.get_object()
         user = request.user
-        if user == user_to_subscribe_or_unsubscribe:
+        if user == following:
             return Response(
                 {'detail': 'Нельзя подписываться на самого себя.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        follow = user_to_subscribe_or_unsubscribe.following.filter(user=user)
-
-        if follow:
+        follow = following.following.filter(user=user)
+        serializer = FollowSerializer(
+            following,
+            context={'request': request}
+        )
+        if follow and request.method == 'DELETE':
             follow.delete()
             return Response(
                 {'detail': 'Подписка успешно удалена.'},
                 status=status.HTTP_204_NO_CONTENT
             )
-        else:
+        elif not follow and request.method == 'POST':
             Follow.objects.create(
                 user=user,
-                following=user_to_subscribe_or_unsubscribe,
+                following=following,
             )
             return Response(
-                {'detail': 'Подписка успешно создана.'},
+                serializer.data,
                 status=status.HTTP_201_CREATED,
+            )
+        else:
+            return Response(
+                {'error': 'Ошибка подписки'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
 

@@ -15,6 +15,11 @@ router.register(
     views.RecipeModelViewSet,
     basename='favorite',
 )
+router.register(
+    r'users/(?P<user_pk>\d+)/subscribe',
+    views.UserModelViewSet,
+    basename='subscribe',
+)
 
 router.register(
     r'recipes/download_shopping_cart',
@@ -56,13 +61,7 @@ urlpatterns = [
         ),
         name='user_subscriptions'
     ),
-    # re_path(
-    #     r'^users/(?P<pk>\d+)/subscribe/$',
-    #     views.UserModelViewSet.as_view(
-    #         {'post': 'subscribe'}
-    #     ),
-    #     name='user_subscribe'
-    # ),
+
     # re_path(
     #     r'recipes/(?P<pk>\d+)/favorite/',
     #     views.RecipeModelViewSet.as_view({'post': 'favorite'}),
