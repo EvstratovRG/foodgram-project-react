@@ -23,8 +23,8 @@ class Ingredient(BaseFoodgramModel):
     """Ингредиенты."""
 
     name = models.CharField(
-        max_length=200, 
-        verbose_name='Название ингредиента', 
+        max_length=200,
+        verbose_name='Название ингредиента',
         blank=False,
         null=False,
         db_index=True,
@@ -86,7 +86,7 @@ class Recipe(BaseFoodgramModel):
 
     author = models.ForeignKey(
         User,
-        verbose_name="автор", 
+        verbose_name="автор",
         related_name='recipes',
         on_delete=models.CASCADE,
     )
@@ -96,7 +96,7 @@ class Recipe(BaseFoodgramModel):
         db_index=True,
     )
     image = models.ImageField(
-        upload_to='recipes/images/',
+        upload_to='recipes/',
         verbose_name='Фотография блюда',
         null=True,
         default=None,

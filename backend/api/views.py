@@ -184,20 +184,20 @@ class RecipeModelViewSet(ModelViewSet):
             detail=True,
             methods=['post', 'delete'],
             url_path='shopping_cart',
-            permission_classes=[IsAuthenticated],
+            permission_classes=(IsAuthenticated, Author,),
         )
     def shopping_cart(self: Self, request: Request, pk: int):
         recipe = self.get_object()
         user = request.user
         purchase = recipe.purchases.filter(user=user)
         serializer = NotDetailRecipeSerializer(recipe)
-        if purchase:
+        if purchase and request.method == 'DELETE':
             purchase.delete()
             return Response(
                 {'detail': 'Рецепт удален из списка покупок.'},
                 status=status.HTTP_204_NO_CONTENT
             )
-        else:
+        elif not purchase and request.method == 'POST':
             Purchase.objects.create(
                 user=user,
                 recipes=recipe,
@@ -206,12 +206,17 @@ class RecipeModelViewSet(ModelViewSet):
                 serializer.data,
                 status=status.HTTP_201_CREATED,
             )
+        else:
+            return Response(
+                {'error': 'Ошибка добавления/удаления рецепта из списка покупок.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(
             detail=False,
             methods=['get'],
             url_path='download_shopping_cart',
-            permission_classes=[IsAuthenticated],
+            permission_classes=(IsAuthenticated, Author,),
         )
     def download_shopping_cart(self: Self, request: Request):
         user = request.user
