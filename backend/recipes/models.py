@@ -171,7 +171,7 @@ class RecipeIngredient(BaseFoodgramModel):
         verbose_name_plural = "Ингредиенты-рецепты"
 
     def __str__(self):
-        return f'{self.recipes} - {self.ingredients}, {self.amount} шт.'
+        return f'{self.recipes} - {self.ingredients}, {self.amount}.'
 
 
 class Follow(BaseFoodgramModel):

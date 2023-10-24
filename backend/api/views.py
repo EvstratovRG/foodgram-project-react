@@ -9,11 +9,6 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from django.http import FileResponse
-import io
-from reportlab.pdfgen import canvas
-from reportlab.lib.units import inch
-from reportlab.lib.pagesizes import letter
 
 from recipes.models import (
     Recipe,
@@ -36,6 +31,7 @@ from .serializers import (
 )
 from .pagination import Pagination
 from .filters import IngredientFilter, RecipeFilter
+from django.http import HttpResponse
 
 
 User = get_user_model()
@@ -130,7 +126,9 @@ class IngredientModelViewSet(
 class RecipeModelViewSet(ModelViewSet):
     """Представление CRUD для модели Рецепта."""
 
-    queryset = Recipe.objects.all()
+    queryset = Recipe.objects.all().prefetch_related(
+        'tags', 'ingredients').select_related(
+                'author')
     serializer_class = RecipeSerializer
     pagination_class = Pagination
     permission_classes = (OnlyRead | Author | IsAdminUser,)
@@ -223,25 +221,26 @@ class RecipeModelViewSet(ModelViewSet):
         cart_data = RecipeIngredient.objects.filter(
             recipes__purchases__user=user
         ).select_related('ingredients')
-        buffer = io.BytesIO()
-        canvas_obj = canvas.Canvas(buffer, pagesize=letter, bottomup=0)
-        text_operation = canvas_obj.beginText()
-        text_operation.setTextOrigin(inch, inch)
-        text_operation.setFont("Helvetica", 14)
+        if not cart_data:
+            return Response(
+                {'error': 'Корзина пуста.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         lines = []
         for elem in cart_data:
-            lines.extend(
-                [elem.recipes.name, elem.ingredients.name, str(elem.amount)]
+            lines.append(
+                [elem.ingredients.name,
+                 elem.ingredients.measurement_unit,
+                 str(elem.amount)]
             )
-        print(lines)
+        # print(lines)
+        formated_response = []
         for line in lines:
-            text_operation.textLine(line)
-        canvas_obj.drawText(text_operation)
-        canvas_obj.showPage()
-        canvas_obj.save()
-        buffer.seek(0)
-        return FileResponse(
-            buffer,
-            as_attachment=True,
-            filename='cart_data.pdf',
-        )
+            formated_line = f'{line[0]} ({line[1]}) - {line[2]}\n'
+            formated_response.append(formated_line)
+        filename = 'список_покупок.txt'
+        response = HttpResponse(formated_response, content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+
+        return response

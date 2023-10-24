@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django_filters',
     'recipes',
     'api',
+    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
@@ -36,6 +37,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 ROOT_URLCONF = 'foodgram.urls'
@@ -106,12 +108,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
-print(STATIC_ROOT)
 
 MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-print(MEDIA_ROOT)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -133,3 +133,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ),
 }
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+    "localhost",
+]
