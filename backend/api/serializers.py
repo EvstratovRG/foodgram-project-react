@@ -57,7 +57,6 @@ class GetUserSerializer(serializers.ModelSerializer):
         ):
             return False
         current_user = self.context['request'].user
-        print(current_user)
         is_subscribed = obj.following.filter(user=current_user).exists()
         return is_subscribed
 
@@ -227,7 +226,6 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         ingredients_data = validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
         author = self.context.get('request').user
-        print(validated_data)
         recipe = Recipe.objects.create(author=author, **validated_data)
         for ingredient_data in ingredients_data:
             amount = ingredient_data['amount']

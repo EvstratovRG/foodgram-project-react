@@ -19,10 +19,11 @@ services:
     image: evstratov95/foodgram_backend
     env_file: .env
     volumes:
-      - static:/backend_static
-      - media:/media
+      - static:/app/static/
+      - media:/app/media/
     depends_on:
       - foodgram_db
+    restart: always
 
   frontend:
     image: evstratov95/foodgram_frontend

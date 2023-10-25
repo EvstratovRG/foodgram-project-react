@@ -120,16 +120,6 @@ class Recipe(BaseFoodgramModel):
     cooking_time = models.PositiveIntegerField(
         verbose_name='время приготовления'
     )
-    is_favorited = models.BooleanField(
-        verbose_name='является ли избранным',
-        blank=True,
-        null=True,
-    )
-    is_in_shopping_cart = models.BooleanField(
-        verbose_name='находится ли в корзине',
-        blank=True,
-        null=True,
-    )
 
     class Meta:
         """Мета класс."""

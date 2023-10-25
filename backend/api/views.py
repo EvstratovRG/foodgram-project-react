@@ -132,8 +132,18 @@ class RecipeModelViewSet(ModelViewSet):
     serializer_class = RecipeSerializer
     pagination_class = Pagination
     permission_classes = (OnlyRead | Author | IsAdminUser,)
-    filter_backends = (DjangoFilterBackend,)
-    filter_class = RecipeFilter
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ('tags__slug', 'author')
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if user.is_authenticated:
+            if self.request.query_params.get('is_favorited') == '1':
+                queryset = queryset.filter(favorites__user=user)
+            if self.request.query_params.get('is_in_shopping_cart') == '1':
+                queryset = queryset.filter(purchases__user=user)
+        return queryset
 
     def get_serializer_class(self):
         """Выбирает сериализатор в зависимости от хттп метода."""
@@ -150,7 +160,7 @@ class RecipeModelViewSet(ModelViewSet):
             detail=True,
             methods=['post', 'delete'],
             url_path='favorite',
-            permission_classes=(IsAuthenticated, Author,),
+            permission_classes=(IsAuthenticated,),
         )
     def favorite(self: Self, request: Request, pk: int):
         recipe = self.get_object()
@@ -182,7 +192,7 @@ class RecipeModelViewSet(ModelViewSet):
             detail=True,
             methods=['post', 'delete'],
             url_path='shopping_cart',
-            permission_classes=(IsAuthenticated, Author,),
+            permission_classes=(IsAuthenticated,),
         )
     def shopping_cart(self: Self, request: Request, pk: int):
         recipe = self.get_object()
@@ -226,7 +236,6 @@ class RecipeModelViewSet(ModelViewSet):
                 {'error': 'Корзина пуста.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
         lines = []
         for elem in cart_data:
             lines.append(
@@ -234,7 +243,6 @@ class RecipeModelViewSet(ModelViewSet):
                  elem.ingredients.measurement_unit,
                  str(elem.amount)]
             )
-        # print(lines)
         formated_response = []
         for line in lines:
             formated_line = f'{line[0]} ({line[1]}) - {line[2]}\n'
