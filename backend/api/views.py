@@ -192,7 +192,7 @@ class RecipeModelViewSet(ModelViewSet):
         if purchase and request.method == 'DELETE':
             purchase.delete()
             return Response(
-                {'detail': 'Рецепт удален из списка покупок.'},
+                {'detail': 'Рецепт успешно удален из списка покупок.'},
                 status=status.HTTP_204_NO_CONTENT
             )
         elif not purchase and request.method == 'POST':
