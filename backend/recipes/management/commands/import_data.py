@@ -1,10 +1,9 @@
 import csv
-
-from django.core.management.base import BaseCommand
 import os
-from recipes.models import Ingredient, Tag, User
-from django.conf import settings
 
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from recipes.models import Ingredient, Tag, User
 
 CSV_PATH_INGREDIENTS = os.path.join(settings.BASE_DIR, 'data/ingredients.csv')
 CSV_PATH_USERS = os.path.join(settings.BASE_DIR, 'data/users.csv')
@@ -21,7 +20,10 @@ class Command(BaseCommand):
             next(csv_reader)
             for row in csv_reader:
                 name, measurement_unit = row
-                ingredient = Ingredient(name=name, measurement_unit=measurement_unit)
+                ingredient = Ingredient(
+                    name=name,
+                    measurement_unit=measurement_unit,
+                )
                 data.append(ingredient)
             Ingredient.objects.bulk_create(data)
 
@@ -32,7 +34,12 @@ class Command(BaseCommand):
             next(csv_reader)
             for row in csv_reader:
                 email, username, first_name, last_name, password = row
-                user = User(email=email, username=username, first_name=first_name, last_name=last_name)
+                user = User(
+                    email=email,
+                    username=username,
+                    first_name=first_name,
+                    last_name=last_name,
+                )
                 data.append(user)
             User.objects.bulk_create(data)
 

@@ -1,17 +1,7 @@
 from django.contrib import admin
 
-from .models import (
-    Follow,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    Tag,
-    Purchase,
-    Favorite,
-    RecipeTag,
-    User,
-)
-
+from .models import (Favorite, Follow, Ingredient, Purchase, Recipe,
+                     RecipeIngredient, RecipeTag, Tag, User)
 
 admin.site.unregister(User)
 
@@ -25,12 +15,23 @@ class UserAdmin(admin.ModelAdmin):
 class FollowAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'following']
     list_filter = ['user', 'following']
-    search_fields = ['user__email', 'user__username', 'following__email', 'following__username']
+    search_fields = [
+        'user__email',
+        'user__username',
+        'following__email',
+        'following__username',
+    ]
 
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'measurement_unit', 'created_at', 'updated_at']
+    list_display = [
+        'id',
+        'name',
+        'measurement_unit',
+        'created_at',
+        'updated_at',
+    ]
     list_filter = ['name', 'measurement_unit']
     search_fields = ['name']
 
@@ -55,7 +56,9 @@ class RecipeAdmin(admin.ModelAdmin):
     get_tags_names.short_description = 'Tags'
 
     def get_ingredients_names(self, obj):
-        return ', '.join([ingredient.name for ingredient in obj.ingredients.all()])
+        return ', '.join(
+            [ingredient.name for ingredient in obj.ingredients.all()],
+        )
 
     get_ingredients_names.short_description = 'Ingredients'
 

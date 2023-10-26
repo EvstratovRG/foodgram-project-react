@@ -1,20 +1,12 @@
 import base64
-import webcolors
 
+import webcolors
+from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.db import transaction
 from djoser import serializers as djoser_serializers
-from django.contrib.auth import get_user_model
+from recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeTag, Tag
 from rest_framework import serializers
-
-from recipes.models import (
-    Recipe,
-    Tag,
-    Ingredient,
-    RecipeIngredient,
-    RecipeTag,
-)
-
 
 User = get_user_model()
 
@@ -212,11 +204,11 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             amount = ingredient['amount']
             if int(amount) < 1:
                 raise serializers.ValidationError({
-                   'amount': 'Количество не может быть меньше 1'
+                    'amount': 'Количество не может быть меньше 1'
                 })
             if ingredient['id'] in ingredients_array:
                 raise serializers.ValidationError({
-                   'ingredient': 'Ингредиенты не дублируются'
+                    'ingredient': 'Ингредиенты не дублируются'
                 })
             ingredients_array.append(ingredient['id'])
         return data
@@ -249,15 +241,6 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             'cooking_time',
             instance.cooking_time,
         )
-        instance.is_favorited = validated_data.get(
-            'is_favorited',
-            instance.is_favorited,
-        )
-        instance.is_in_shopping_cart = validated_data.get(
-            'is_in_shopping_cart',
-            instance.is_in_shopping_cart,
-        )
-
         if 'ingredients' and 'tags' not in validated_data:
             instance.save()
             return instance

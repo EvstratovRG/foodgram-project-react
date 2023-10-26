@@ -1,38 +1,24 @@
 from typing import Self
 
+from django.contrib.auth import get_user_model
+from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.request import Request
-from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from recipes.models import (Favorite, Follow, Ingredient, Purchase, Recipe,
+                            RecipeIngredient, Tag)
+from rest_framework import filters, status
+from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework import status
-from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
-from django.contrib.auth import get_user_model
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from recipes.models import (
-    Recipe,
-    Tag,
-    Ingredient,
-    RecipeIngredient,
-    Follow,
-    Favorite,
-    Purchase,
-)
-from .permissions import OnlyRead, Author
-from .serializers import (
-    RecipeSerializer,
-    TagSerializer,
-    IngredientSerializer,
-    GetUserSerializer,
-
-    NotDetailRecipeSerializer,
-    FollowSerializer, CreateRecipeSerializer,
-)
 from .pagination import Pagination
-from django.http import HttpResponse
-from rest_framework import filters
-
+from .permissions import Author, OnlyRead
+from .serializers import (CreateRecipeSerializer, FollowSerializer,
+                          GetUserSerializer, IngredientSerializer,
+                          NotDetailRecipeSerializer, RecipeSerializer,
+                          TagSerializer)
 
 User = get_user_model()
 
@@ -43,12 +29,10 @@ class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
     serializer_class = GetUserSerializer
     pagination_class = Pagination
 
-    @action(
-            detail=False,
+    @action(detail=False,
             methods=['get'],
             url_path='subscriptions',
-            permission_classes=[IsAuthenticated],
-        )
+            permission_classes=[IsAuthenticated])
     def subscriptions(self: Self, request: Request):
         user = request.user
         subscriptions = User.objects.filter(following__user=user)
@@ -60,12 +44,10 @@ class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(
-            detail=True,
+    @action(detail=True,
             methods=['post', 'delete'],
             url_path='subscribe',
-            permission_classes=[IsAuthenticated],
-        )
+            permission_classes=[IsAuthenticated])
     def subscribe(self: Self, request: Request, pk: int):
         following = self.get_object()
         user = request.user
@@ -129,8 +111,7 @@ class RecipeModelViewSet(ModelViewSet):
     """Представление CRUD для модели Рецепта."""
 
     queryset = Recipe.objects.all().prefetch_related(
-        'tags', 'ingredients').select_related(
-                'author')
+        'tags', 'ingredients').select_related('author')
     serializer_class = RecipeSerializer
     pagination_class = Pagination
     permission_classes = (OnlyRead | Author | IsAdminUser,)
@@ -158,12 +139,10 @@ class RecipeModelViewSet(ModelViewSet):
         context.update({'request': self.request})
         return context
 
-    @action(
-            detail=True,
+    @action(detail=True,
             methods=['post', 'delete'],
             url_path='favorite',
-            permission_classes=(IsAuthenticated,),
-        )
+            permission_classes=(IsAuthenticated,))
     def favorite(self: Self, request: Request, pk: int):
         recipe = self.get_object()
         user = request.user
@@ -190,12 +169,10 @@ class RecipeModelViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    @action(
-            detail=True,
+    @action(detail=True,
             methods=['post', 'delete'],
             url_path='shopping_cart',
-            permission_classes=(IsAuthenticated,),
-        )
+            permission_classes=(IsAuthenticated,))
     def shopping_cart(self: Self, request: Request, pk: int):
         recipe = self.get_object()
         user = request.user
@@ -225,12 +202,10 @@ class RecipeModelViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    @action(
-            detail=False,
+    @action(detail=False,
             methods=['get'],
             url_path='download_shopping_cart',
-            permission_classes=(IsAuthenticated, Author,),
-        )
+            permission_classes=(IsAuthenticated, Author,))
     def download_shopping_cart(self: Self, request: Request):
         user = request.user
         cart_data = RecipeIngredient.objects.filter(
