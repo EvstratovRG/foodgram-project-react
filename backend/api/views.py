@@ -30,8 +30,8 @@ from .serializers import (
     FollowSerializer, CreateRecipeSerializer,
 )
 from .pagination import Pagination
-from .filters import IngredientFilter, RecipeFilter
 from django.http import HttpResponse
+from rest_framework import filters
 
 
 User = get_user_model()
@@ -116,6 +116,8 @@ class IngredientModelViewSet(
 ):
     """Представление CRUD для модели Ингредиентов."""
 
+    class IngredientFilter(filters.SearchFilter):
+        search_param = 'name'
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = None
@@ -216,7 +218,10 @@ class RecipeModelViewSet(ModelViewSet):
             )
         else:
             return Response(
-                {'error': 'Ошибка добавления/удаления рецепта из списка покупок.'},
+                {'error': (
+                    'Ошибка добавления/удаления рецепта из списка покупок.'
+                ),
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
