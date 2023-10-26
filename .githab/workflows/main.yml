@@ -1,4 +1,4 @@
-name: Main Kittygram workflow
+name: Main foodgram workflow
 
 on: push
 
@@ -49,7 +49,7 @@ jobs:
       - tests 
       - build_and_push_to_docker_hub
 
-    if: success() && github.ref == 'refs/heads/main'
+    if: success() && github.ref == 'refs/heads/master'
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
