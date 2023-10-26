@@ -1,5 +1,7 @@
 # Дипломная работа Яндекс Практикум - Фудграм
 
+[![Main foodgram workflow](https://github.com/EvstratovRG/foodgram-project-react/actions/workflows/main.yml/badge.svg)](https://github.com/EvstratovRG/foodgram-project-react/actions/workflows/main.yml)
+
 **Фудграм** - это веб-приложение, разработанное в рамках дипломной работы на Яндекс Практикум. Он предоставляет пользовательскую платформу для публикации рецептов, а также обладает следующими основными функциями:
 
 - Возможность публикации рецептов пользователями.
@@ -42,4 +44,4 @@ python manage.py createsuperuser
 
 Используя суперпользователя, вы можете обратиться по адресу /admin/ для конфигурации вашего сайта.
 
-## Автор: Евстратов Р.Г.
+ Автор: Евстратов Р.Г.
