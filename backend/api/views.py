@@ -3,8 +3,6 @@ from typing import Self
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from recipes.models import (Favorite, Follow, Ingredient, Purchase, Recipe,
-                            RecipeIngredient, Tag)
 from rest_framework import filters, status
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -19,6 +17,8 @@ from .serializers import (CreateRecipeSerializer, FollowSerializer,
                           GetUserSerializer, IngredientSerializer,
                           NotDetailRecipeSerializer, RecipeSerializer,
                           TagSerializer)
+from recipes.models import (Favorite, Follow, Ingredient, Purchase, Recipe,
+                            RecipeIngredient, Tag)
 
 User = get_user_model()
 
