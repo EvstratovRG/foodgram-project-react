@@ -5,8 +5,9 @@ from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.db import transaction
 from djoser import serializers as djoser_serializers
-from recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeTag, Tag
 from rest_framework import serializers
+
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 
 User = get_user_model()
 
@@ -99,18 +100,22 @@ class IngredientSerializer(serializers.ModelSerializer):
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     """Связующий сериализатор рецептов и количества ингредиентов."""
 
-    amount = serializers.SerializerMethodField(read_only=True)
+    name = serializers.CharField(
+        source='ingredients.name',
+        read_only=True,
+    )
+    measurement_unit = serializers.CharField(
+        source='ingredients.measurement_unit',
+        read_only=True,
+    )
+    id = serializers.PrimaryKeyRelatedField(
+        source='ingredients.id',
+        read_only=True,
+    )
 
     class Meta:
-        model = Ingredient
+        model = RecipeIngredient
         fields = ('id', 'name', 'amount', 'measurement_unit',)
-
-    def get_amount(self, obj):
-        recipe_ingredient = obj.recipe_ingredients.first()
-        if recipe_ingredient:
-            return recipe_ingredient.amount
-        else:
-            return None
 
 
 class TagIDSerializer(serializers.ModelSerializer):
@@ -126,7 +131,10 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     tags = TagSerializer(many=True)
     author = GetUserSerializer(read_only=True)
-    ingredients = RecipeIngredientSerializer(many=True)
+    ingredients = RecipeIngredientSerializer(
+        many=True,
+        source='recipe_ingredients',
+    )
     image = Base64ImageFieldSerializer(required=False, allow_null=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -219,52 +227,50 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags')
         author = self.context.get('request').user
         recipe = Recipe.objects.create(author=author, **validated_data)
+        recipe_ingredients = []
         for ingredient_data in ingredients_data:
             amount = ingredient_data['amount']
             ingredient_id = ingredient_data['id']
-            RecipeIngredient.objects.create(
-                ingredients=Ingredient.objects.get(id=ingredient_id),
-                recipes=recipe,
-                amount=amount,
+            recipe_ingredients.append(
+                RecipeIngredient(
+                    ingredients=Ingredient.objects.get(
+                        id=ingredient_id
+                    ),
+                    recipes=recipe,
+                    amount=amount
+                ),
             )
-
+        RecipeIngredient.objects.bulk_create(recipe_ingredients)
         recipe.tags.set(tags_data)
         recipe.save()
         return recipe
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        instance.name = validated_data.get('name', instance.name)
-        instance.image = validated_data.get('image', instance.image)
-        instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get(
-            'cooking_time',
-            instance.cooking_time,
-        )
-        if 'ingredients' and 'tags' not in validated_data:
-            instance.save()
-            return instance
-
         ingredients_data = validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
-        instance.tags.clear()
-        instance.ingredients.clear()
-        for ingredient_data in ingredients_data:
-            amount = ingredient_data.pop('amount', None)
-            current_ingredient = Ingredient.objects.get(
-                id=ingredient_data['id'],
-            )
-            RecipeIngredient.objects.create(
-                ingredients=current_ingredient,
-                recipes=instance,
-                amount=amount,
-            )
-        for tag in tags_data:
-            RecipeTag.objects.create(
-                tags=tag,
-                recipes=instance
-            )
-
+        for key, value in validated_data.items():
+            if hasattr(instance, key):
+                setattr(instance, key, value)
+        if tags_data is not None:
+            instance.tags.clear()
+            instance.tags.set(tags_data)
+        if ingredients_data is not None:
+            instance.ingredients.clear()
+            recipe_ingredients = []
+            for ingredient_data in ingredients_data:
+                amount = ingredient_data.pop('amount')
+                current_ingredient = Ingredient.objects.get(
+                    id=ingredient_data['id'],
+                )
+                recipe_ingredients.append(
+                    RecipeIngredient(
+                        ingredients=current_ingredient,
+                        recipes=instance,
+                        amount=amount
+                    ),
+                )
+            RecipeIngredient.objects.bulk_create(recipe_ingredients)
         instance.save()
         return instance
 

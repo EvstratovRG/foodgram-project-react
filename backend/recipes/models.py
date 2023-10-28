@@ -1,14 +1,14 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator
+from django.core.validators import MinValueValidator
 from django.db import models
 
-from .validators import validate_slug
+from .validators import validate_color, validate_slug
 
 User = get_user_model()
 
 
-class BaseFoodgramModel(models.Model):
+class CommonInfoBaseModel(models.Model):
     """Абстрактная модель."""
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -18,7 +18,7 @@ class BaseFoodgramModel(models.Model):
         abstract = True
 
 
-class Ingredient(BaseFoodgramModel):
+class Ingredient(CommonInfoBaseModel):
     """Ингредиенты."""
 
     name = models.CharField(
@@ -47,7 +47,7 @@ class Ingredient(BaseFoodgramModel):
         return f'{self.name} {self.measurement_unit}'
 
 
-class Tag(BaseFoodgramModel):
+class Tag(CommonInfoBaseModel):
     """Тэги."""
 
     name = models.CharField(
@@ -58,6 +58,7 @@ class Tag(BaseFoodgramModel):
         max_length=7,
         verbose_name='rgb код',
         null=True,
+        validators=[validate_color]
     )
     slug = models.SlugField(
         max_length=200,
@@ -80,7 +81,7 @@ class Tag(BaseFoodgramModel):
         return self.name
 
 
-class Recipe(BaseFoodgramModel):
+class Recipe(CommonInfoBaseModel):
     """Рецепты."""
 
     author = models.ForeignKey(
@@ -100,8 +101,7 @@ class Recipe(BaseFoodgramModel):
         null=True,
         default=None,
     )
-    text = models.CharField(
-        max_length=1000,
+    text = models.TextField(
         verbose_name='Описание рецепта',
         null=True,
         default=None,
@@ -117,6 +117,7 @@ class Recipe(BaseFoodgramModel):
         through='RecipeTag'
     )
     cooking_time = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
         verbose_name='время приготовления'
     )
 
@@ -131,7 +132,7 @@ class Recipe(BaseFoodgramModel):
         return self.name
 
 
-class RecipeIngredient(BaseFoodgramModel):
+class RecipeIngredient(CommonInfoBaseModel):
     """Связывающая модель для ManyToMany."""
 
     recipes = models.ForeignKey(
@@ -147,9 +148,8 @@ class RecipeIngredient(BaseFoodgramModel):
         related_name='recipe_ingredients',
     )
     amount = models.SmallIntegerField(
-        validators=[MaxValueValidator(1000)],
-        blank=True,
-        null=True,
+        blank=False,
+        null=False,
     )
 
     class Meta:
@@ -163,7 +163,7 @@ class RecipeIngredient(BaseFoodgramModel):
         return f'{self.recipes} - {self.ingredients}, {self.amount}.'
 
 
-class Follow(BaseFoodgramModel):
+class Follow(CommonInfoBaseModel):
     """Подписки."""
 
     user = models.ForeignKey(
@@ -202,7 +202,7 @@ class Follow(BaseFoodgramModel):
         return f'{self.user} подписан на {self.following}'
 
 
-class Purchase(BaseFoodgramModel):
+class Purchase(CommonInfoBaseModel):
     """Покупки пользователя."""
 
     user = models.ForeignKey(
@@ -226,7 +226,7 @@ class Purchase(BaseFoodgramModel):
         verbose_name_plural = "Покупки"
 
 
-class Favorite(BaseFoodgramModel):
+class Favorite(CommonInfoBaseModel):
     """Избранные рецепты пользователя."""
 
     user = models.ForeignKey(
@@ -253,7 +253,7 @@ class Favorite(BaseFoodgramModel):
         return f'{self.user} likes {self.recipes}'
 
 
-class RecipeTag(BaseFoodgramModel):
+class RecipeTag(CommonInfoBaseModel):
     recipes = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     tags = models.ForeignKey(Tag, on_delete=models.CASCADE)
 

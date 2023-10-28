@@ -8,3 +8,10 @@ def validate_slug(tag):
         raise ValidationError(
             f'Не допустимые символы <{tag}> в тэге.'
         )
+
+
+def validate_color(color):
+    if re.search(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', color) is None:
+        raise ValidationError(
+            f'Цвет - {color} не соотвествует HEX формату.'
+        )

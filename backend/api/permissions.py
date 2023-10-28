@@ -1,17 +1,14 @@
 from rest_framework import permissions
 
 
-class OnlyRead(permissions.BasePermission):
+class ReadOnlyPermission(permissions.BasePermission):
     """Доступ только для безопасных методов"""
 
     def has_permission(self, request, view):
         return request.method in permissions.SAFE_METHODS
 
-    def has_object_permission(self, request, view, obj):
-        return request.method in permissions.SAFE_METHODS
 
-
-class Author(permissions.BasePermission):
+class IsAuthorPermission(permissions.BasePermission):
     """Доступ только автору записи."""
 
     def has_permission(self, request, view):

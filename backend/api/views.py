@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from .pagination import Pagination
-from .permissions import Author, OnlyRead
+from .permissions import IsAuthorPermission, ReadOnlyPermission
 from .serializers import (CreateRecipeSerializer, FollowSerializer,
                           GetUserSerializer, IngredientSerializer,
                           NotDetailRecipeSerializer, RecipeSerializer,
@@ -88,7 +88,7 @@ class TagModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     pagination_class = None
-    permission_classes = (OnlyRead | IsAdminUser,)
+    permission_classes = (ReadOnlyPermission | IsAdminUser,)
 
 
 class IngredientModelViewSet(
@@ -114,7 +114,9 @@ class RecipeModelViewSet(ModelViewSet):
         'tags', 'ingredients').select_related('author')
     serializer_class = RecipeSerializer
     pagination_class = Pagination
-    permission_classes = (OnlyRead | Author | IsAdminUser,)
+    permission_classes = (
+        ReadOnlyPermission | IsAuthorPermission | IsAdminUser,
+    )
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ('tags__slug', 'author')
 
@@ -139,25 +141,28 @@ class RecipeModelViewSet(ModelViewSet):
         context.update({'request': self.request})
         return context
 
-    @action(detail=True,
-            methods=['post', 'delete'],
-            url_path='favorite',
-            permission_classes=(IsAuthenticated,))
-    def favorite(self: Self, request: Request, pk: int):
-        recipe = self.get_object()
+    def favorite_and_shopping_cart_logic(
+            self,
+            request,
+            pk,
+            related_name,
+            message,
+            model,
+    ):
+        obj = self.get_object()
         user = request.user
-        favor = recipe.favorites.filter(user=user)
-        serializer = NotDetailRecipeSerializer(recipe)
-        if favor and request.method == 'DELETE':
-            favor.delete()
-            return Response(
-                {'detail': 'Рецепт успешно удален из избранного.'},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        elif not favor and request.method == 'POST':
-            Favorite.objects.create(
+        if related_name == 1:
+            query = obj.favorites.filter(user=user)
+        if related_name == 2:
+            query = obj.purchases.filter(user=user)
+        serializer = NotDetailRecipeSerializer(obj)
+        if query and request.method == 'DELETE':
+            query.delete()
+            return Response(message, status=status.HTTP_204_NO_CONTENT)
+        elif not query and request.method == 'POST':
+            model.objects.create(
                 user=user,
-                recipes=recipe,
+                recipes=obj,
             )
             return Response(
                 serializer.data,
@@ -171,41 +176,34 @@ class RecipeModelViewSet(ModelViewSet):
 
     @action(detail=True,
             methods=['post', 'delete'],
+            url_path='favorite',
+            permission_classes=(IsAuthenticated,))
+    def favorite(self: Self, request: Request, pk: int):
+        return self.favorite_and_shopping_cart_logic(
+            request=request,
+            pk=pk,
+            related_name=1,
+            message={'detail': 'Рецепт успешно удален из избранного.'},
+            model=Favorite,
+        )
+
+    @action(detail=True,
+            methods=['post', 'delete'],
             url_path='shopping_cart',
             permission_classes=(IsAuthenticated,))
     def shopping_cart(self: Self, request: Request, pk: int):
-        recipe = self.get_object()
-        user = request.user
-        purchase = recipe.purchases.filter(user=user)
-        serializer = NotDetailRecipeSerializer(recipe)
-        if purchase and request.method == 'DELETE':
-            purchase.delete()
-            return Response(
-                {'detail': 'Рецепт успешно удален из списка покупок.'},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        elif not purchase and request.method == 'POST':
-            Purchase.objects.create(
-                user=user,
-                recipes=recipe,
-            )
-            return Response(
-                serializer.data,
-                status=status.HTTP_201_CREATED,
-            )
-        else:
-            return Response(
-                {'error': (
-                    'Ошибка добавления/удаления рецепта из списка покупок.'
-                ),
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return self.favorite_and_shopping_cart_logic(
+            request=request,
+            pk=pk,
+            related_name=2,
+            message={'detail': 'Рецепт успешно удален из списка покупок.'},
+            model=Purchase,
+        )
 
     @action(detail=False,
             methods=['get'],
             url_path='download_shopping_cart',
-            permission_classes=(IsAuthenticated, Author,))
+            permission_classes=(IsAuthenticated, IsAuthorPermission,))
     def download_shopping_cart(self: Self, request: Request):
         user = request.user
         cart_data = RecipeIngredient.objects.filter(

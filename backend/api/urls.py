@@ -5,33 +5,25 @@ from . import views
 
 router = DefaultRouter()
 
-router.register(r'recipes', views.RecipeModelViewSet)
-
-router.register(r'tags', views.TagModelViewSet)
-router.register(r'ingredients', views.IngredientModelViewSet)
 router.register(r'users', views.UserModelViewSet, basename='users')
-router.register(
-    r'recipes/(?P<recipe_pk>\d+)/favorite',
-    views.RecipeModelViewSet,
-    basename='favorite',
-)
 router.register(
     r'users/(?P<user_pk>\d+)/subscribe',
     views.UserModelViewSet,
     basename='subscribe',
 )
-
-# router.register(
-#     r'recipes/download_shopping_cart',
-#     views.RecipeModelViewSet,
-#     basename='download-shopping-cart',
-# )
-
+router.register(r'recipes', views.RecipeModelViewSet)
 router.register(
     r'recipes/(?P<recipe_pk>\d+)/shopping_cart',
     views.RecipeModelViewSet,
     basename='shopping-cart',
 )
+router.register(
+    r'recipes/(?P<recipe_pk>\d+)/favorite',
+    views.RecipeModelViewSet,
+    basename='favorite',
+)
+router.register(r'tags', views.TagModelViewSet)
+router.register(r'ingredients', views.IngredientModelViewSet)
 
 
 urlpatterns = [
@@ -46,8 +38,6 @@ urlpatterns = [
         views.RecipeModelViewSet.as_view({'get': 'download_shopping_cart'}),
         name='download_shopping_cart',
     ),
-
-
     path('', include('djoser.urls')),
     re_path(r'^auth/', include('djoser.urls.authtoken')),
     path('', include(router.urls)),
