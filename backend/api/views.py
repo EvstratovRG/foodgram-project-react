@@ -3,7 +3,7 @@ from typing import Self
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
@@ -11,6 +11,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
+from .filters import IngredientFilter
 from .pagination import Pagination
 from .permissions import IsAuthorPermission, ReadOnlyPermission
 from .serializers import (CreateRecipeSerializer, FollowSerializer,
@@ -98,8 +99,6 @@ class IngredientModelViewSet(
 ):
     """Представление CRUD для модели Ингредиентов."""
 
-    class IngredientFilter(filters.SearchFilter):
-        search_param = 'name'
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = None
@@ -145,16 +144,12 @@ class RecipeModelViewSet(ModelViewSet):
             self,
             request,
             pk,
-            related_name,
             message,
             model,
     ):
         obj = self.get_object()
         user = request.user
-        if related_name == 1:
-            query = obj.favorites.filter(user=user)
-        if related_name == 2:
-            query = obj.purchases.filter(user=user)
+        query = model.objects.filter(recipes=obj, user=user)
         serializer = NotDetailRecipeSerializer(obj)
         if query and request.method == 'DELETE':
             query.delete()
@@ -182,7 +177,6 @@ class RecipeModelViewSet(ModelViewSet):
         return self.favorite_and_shopping_cart_logic(
             request=request,
             pk=pk,
-            related_name=1,
             message={'detail': 'Рецепт успешно удален из избранного.'},
             model=Favorite,
         )
@@ -195,7 +189,6 @@ class RecipeModelViewSet(ModelViewSet):
         return self.favorite_and_shopping_cart_logic(
             request=request,
             pk=pk,
-            related_name=2,
             message={'detail': 'Рецепт успешно удален из списка покупок.'},
             model=Purchase,
         )

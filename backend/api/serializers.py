@@ -221,12 +221,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             ingredients_array.append(ingredient['id'])
         return data
 
-    @transaction.atomic
-    def create(self, validated_data):
-        ingredients_data = validated_data.pop('ingredients')
-        tags_data = validated_data.pop('tags')
-        author = self.context.get('request').user
-        recipe = Recipe.objects.create(author=author, **validated_data)
+    def create_and_update_logic(self, ingredients_data, recipe):
         recipe_ingredients = []
         for ingredient_data in ingredients_data:
             amount = ingredient_data['amount']
@@ -241,6 +236,14 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
                 ),
             )
         RecipeIngredient.objects.bulk_create(recipe_ingredients)
+
+    @transaction.atomic
+    def create(self, validated_data):
+        ingredients_data = validated_data.pop('ingredients')
+        tags_data = validated_data.pop('tags')
+        author = self.context.get('request').user
+        recipe = Recipe.objects.create(author=author, **validated_data)
+        self.create_and_update_logic(ingredients_data, tags_data, recipe)
         recipe.tags.set(tags_data)
         recipe.save()
         return recipe
@@ -249,30 +252,17 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         ingredients_data = validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
-        for key, value in validated_data.items():
-            if hasattr(instance, key):
-                setattr(instance, key, value)
         if tags_data is not None:
-            instance.tags.clear()
             instance.tags.set(tags_data)
         if ingredients_data is not None:
+            instance.tags.clear()
             instance.ingredients.clear()
-            recipe_ingredients = []
-            for ingredient_data in ingredients_data:
-                amount = ingredient_data.pop('amount')
-                current_ingredient = Ingredient.objects.get(
-                    id=ingredient_data['id'],
-                )
-                recipe_ingredients.append(
-                    RecipeIngredient(
-                        ingredients=current_ingredient,
-                        recipes=instance,
-                        amount=amount
-                    ),
-                )
-            RecipeIngredient.objects.bulk_create(recipe_ingredients)
-        instance.save()
-        return instance
+            self.create_and_update_logic(
+                ingredients_data,
+                tags_data,
+                recipe=instance,
+            )
+        return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         serializer = RecipeSerializer(

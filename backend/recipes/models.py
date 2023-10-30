@@ -148,8 +148,7 @@ class RecipeIngredient(CommonInfoBaseModel):
         related_name='recipe_ingredients',
     )
     amount = models.SmallIntegerField(
-        blank=False,
-        null=False,
+        validators=[MinValueValidator(1)]
     )
 
     class Meta:
