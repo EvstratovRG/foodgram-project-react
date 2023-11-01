@@ -243,7 +243,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags')
         author = self.context.get('request').user
         recipe = Recipe.objects.create(author=author, **validated_data)
-        self.create_and_update_logic(ingredients_data, tags_data, recipe)
+        self.create_and_update_logic(ingredients_data, recipe)
         recipe.tags.set(tags_data)
         recipe.save()
         return recipe
@@ -259,7 +259,6 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             instance.ingredients.clear()
             self.create_and_update_logic(
                 ingredients_data,
-                tags_data,
                 recipe=instance,
             )
         return super().update(instance, validated_data)
