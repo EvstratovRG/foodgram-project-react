@@ -10,14 +10,14 @@ services:
   foodgram_db:
     image: postgres:13.0
     volumes:
-      - foodgram_data:/var/lib/postgresql/data/
-    env_file: ../.env
+      - foodgram_data:/var/lib/postgresql/data
+    env_file: .env
 
     restart: always
 
   backend:
     build: ../backend
-    env_file: ../.env
+    env_file: .env
     volumes:
       - static:/app/static/
       - media:/app/media/
