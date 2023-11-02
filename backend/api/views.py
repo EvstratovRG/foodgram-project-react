@@ -117,12 +117,16 @@ class RecipeModelViewSet(ModelViewSet):
         ReadOnlyPermission | IsAuthorPermission | IsAdminUser,
     )
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ('tags__slug', 'author')
+    filterset_fields = ('tags__slug', 'author',)
 
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
+        tags_slug = self.request.query_params.get('tags')
+        if tags_slug:
+            queryset = queryset.filter(tags__slug=tags_slug)
         if user.is_authenticated:
+            queryset = queryset.filter(user=user)
             if self.request.query_params.get('is_favorited') == '1':
                 queryset = queryset.filter(favorites__user=user)
             if self.request.query_params.get('is_in_shopping_cart') == '1':
