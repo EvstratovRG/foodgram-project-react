@@ -3,6 +3,7 @@ from typing import Self
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -11,7 +12,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from .filters import IngredientFilter
+from .filters import IngredientFilter, TagFilter
 from .pagination import Pagination
 from .permissions import IsAuthorPermission, ReadOnlyPermission
 from .serializers import (CreateRecipeSerializer, FollowSerializer,
@@ -108,7 +109,6 @@ class IngredientModelViewSet(
 
 class RecipeModelViewSet(ModelViewSet):
     """Представление CRUD для модели Рецепта."""
-
     queryset = Recipe.objects.all().prefetch_related(
         'tags', 'ingredients').select_related('author')
     serializer_class = RecipeSerializer
@@ -117,14 +117,11 @@ class RecipeModelViewSet(ModelViewSet):
         ReadOnlyPermission | IsAuthorPermission | IsAdminUser,
     )
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ('tags__slug', 'author',)
+    filterset_class = TagFilter
 
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        tags_slug = self.request.query_params.get('tags')
-        if tags_slug:
-            queryset = queryset.filter(tags__slug=tags_slug)
         if user.is_authenticated:
             if self.request.query_params.get('is_favorited') == '1':
                 queryset = queryset.filter(favorites__user=user)
