@@ -99,7 +99,7 @@ class IngredientModelViewSet(
 ):
     """Представление CRUD для модели Ингредиентов."""
 
-    queryset = Ingredient.objects.all()
+    queryset = Ingredient.objects.all().distinct()
     serializer_class = IngredientSerializer
     pagination_class = None
     filter_backends = (IngredientFilter,)
