@@ -132,3 +132,6 @@ INTERNAL_IPS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = ['https://foodgramdjan.ddns.net']
+
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000

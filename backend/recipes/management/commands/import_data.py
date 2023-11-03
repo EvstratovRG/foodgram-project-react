@@ -4,6 +4,7 @@ import os
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from recipes.models import Ingredient, Tag, User
+from django.db import transaction
 
 CSV_PATH_INGREDIENTS = os.path.join(settings.BASE_DIR, 'data/ingredients.csv')
 CSV_PATH_USERS = os.path.join(settings.BASE_DIR, 'data/users.csv')
@@ -54,6 +55,7 @@ class Command(BaseCommand):
                 data.append(tag)
             Tag.objects.bulk_create(data)
 
+    @transaction.atomic
     def handle(self, *args, **options):
         self.import_ingredients()
         self.import_users()
