@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict
+from collections import defaultdict
 from typing import Self
 
 from django.contrib.auth import get_user_model
@@ -150,7 +150,6 @@ class RecipeModelViewSet(ModelViewSet):
         obj = self.get_object()
         user = request.user
         query = model.objects.filter(recipes=obj, user=user)
-        # query.items.values("data").annotate(Count("id")).order_by()
         serializer = NotDetailRecipeSerializer(obj)
         if query and request.method == 'DELETE':
             query.delete()
