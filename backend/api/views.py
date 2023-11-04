@@ -29,7 +29,6 @@ class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
     queryset = User.objects.all()
     serializer_class = GetUserSerializer
     pagination_class = Pagination
-    pagination_class.page_size = 3
 
     @action(detail=False,
             methods=['get'],
@@ -150,6 +149,7 @@ class RecipeModelViewSet(ModelViewSet):
         obj = self.get_object()
         user = request.user
         query = model.objects.filter(recipes=obj, user=user)
+        # query.items.values("data").annotate(Count("id")).order_by()
         serializer = NotDetailRecipeSerializer(obj)
         if query and request.method == 'DELETE':
             query.delete()

@@ -281,7 +281,8 @@ class NotDetailRecipeSerializer(serializers.ModelSerializer):
 
 class FollowSerializer(GetUserSerializer):
 
-    recipes = NotDetailRecipeSerializer(many=True, allow_null=True)
+    # recipes = NotDetailRecipeSerializer(many=True, allow_null=True)
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
     class Meta(GetUserSerializer.Meta):
@@ -291,5 +292,15 @@ class FollowSerializer(GetUserSerializer):
         )
 
     def get_recipes_count(self, obj):
-        recipe_count = Recipe.objects.filter(author=obj).count()
-        return recipe_count
+        # recipe_count = Recipe.objects.filter(author=obj).count()
+        # return recipe_count
+        return obj.recipes.count()
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        recipes_limit = request.get('recipes_limit')
+        recipes = obj.recipes.all()
+        if recipes_limit:
+            recipes = recipes[:recipes_limit]
+        serializer = NotDetailRecipeSerializer(many=True, allow_null=True)
+        return serializer.data
