@@ -301,6 +301,6 @@ class FollowSerializer(GetUserSerializer):
         recipes_limit = request.query_params.get('recipes_limit')
         recipes = obj.recipes.all()
         if recipes_limit:
-            recipes = recipes[:recipes_limit]
+            recipes = recipes[:int(recipes_limit)]
         serializer = NotDetailRecipeSerializer(many=True, allow_null=True)
         return serializer.data
