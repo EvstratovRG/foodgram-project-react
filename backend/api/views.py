@@ -1,3 +1,4 @@
+from collections import Counter, defaultdict
 from typing import Self
 
 from django.contrib.auth import get_user_model
@@ -207,19 +208,24 @@ class RecipeModelViewSet(ModelViewSet):
                 {'error': 'Корзина пуста.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        lines = []
+        item_amounts = defaultdict(float)
         for elem in cart_data:
-            lines.append(
-                [elem.ingredients.name,
-                 elem.ingredients.measurement_unit,
-                 str(elem.amount)]
+            item_key = (
+                elem.ingredients.name,
+                elem.ingredients.measurement_unit
             )
+            item_amounts[item_key] += elem.amount
+        lines = [
+            [item_key[0], item_key[1], str(amount)]
+            for item_key, amount in item_amounts.items()
+        ]
         formated_response = []
+        promo = 'Список покупок'
+        formated_response.append(promo)
         for line in lines:
-            formated_line = f'{line[0]} ({line[1]}) - {line[2]}\n'
+            formated_line = f'\n{line[0]} ({line[1]}) - {line[2]}\n'
             formated_response.append(formated_line)
         filename = 'список_покупок.txt'
         response = HttpResponse(formated_response, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename={filename}'
-
         return response
