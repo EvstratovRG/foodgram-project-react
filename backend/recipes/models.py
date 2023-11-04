@@ -124,7 +124,7 @@ class Recipe(CommonInfoBaseModel):
     class Meta:
         """Мета класс."""
 
-        ordering = ['name']
+        ordering = ['created_at']
         verbose_name = "рецепт"
         verbose_name_plural = "рецепты"
 

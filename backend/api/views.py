@@ -29,6 +29,7 @@ class UserModelViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
     queryset = User.objects.all()
     serializer_class = GetUserSerializer
     pagination_class = Pagination
+    pagination_class.page_size = 3
 
     @action(detail=False,
             methods=['get'],
