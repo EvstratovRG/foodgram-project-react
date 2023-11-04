@@ -27,7 +27,6 @@ class Ingredient(CommonInfoBaseModel):
         blank=False,
         null=False,
         db_index=True,
-        unique=True,
     )
     measurement_unit = models.CharField(
         max_length=200,
