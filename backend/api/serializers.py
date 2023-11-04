@@ -302,5 +302,9 @@ class FollowSerializer(GetUserSerializer):
         recipes = obj.recipes.all()
         if recipes_limit:
             recipes = recipes[:int(recipes_limit)]
-        serializer = NotDetailRecipeSerializer(recipes, many=True, allow_null=True)
+        serializer = NotDetailRecipeSerializer(
+            recipes,
+            many=True,
+            allow_null=True,
+        )
         return serializer.data
