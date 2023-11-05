@@ -202,15 +202,22 @@ class RecipeModelViewSet(ModelViewSet):
         user = request.user
         cart_data = RecipeIngredient.objects.filter(
             recipes__purchases__user=user
-        ).select_related('ingredients')
+        ).select_related('ingredients').values(
+            'ingredients__name',
+            'ingredients__measurement_unit').annotate(
+                amount=Sum('amount')
+        )
         if not cart_data:
             return Response(
                 {'error': 'Корзина пуста.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        cart_data = cart_data.values('ingredients__name', 'ingredients__measurement_unit').annotate(amount=Sum('amount'))
         lines = [
-            [item['ingredients__name'], item['ingredients__measurement_unit'], str(item['amount'])]
+            [
+                item['ingredients__name'],
+                item['ingredients__measurement_unit'],
+                str(item['amount'])
+            ]
             for item in cart_data
         ]
         # item_amounts = defaultdict(float)
