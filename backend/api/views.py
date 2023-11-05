@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from django.db.models import Sum
 
 from .filters import IngredientFilter, TagFilter
 from .pagination import Pagination
@@ -114,7 +115,7 @@ class RecipeModelViewSet(ModelViewSet):
     serializer_class = RecipeSerializer
     pagination_class = Pagination
     permission_classes = (
-        ReadOnlyPermission | IsAuthorPermission,
+        ReadOnlyPermission | IsAuthorPermission | IsAdminUser,
     )
     filter_backends = [DjangoFilterBackend]
     filterset_class = TagFilter
@@ -207,17 +208,22 @@ class RecipeModelViewSet(ModelViewSet):
                 {'error': 'Корзина пуста.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        item_amounts = defaultdict(float)
-        for elem in cart_data:
-            item_key = (
-                elem.ingredients.name,
-                elem.ingredients.measurement_unit
-            )
-            item_amounts[item_key] += elem.amount
+        cart_data = cart_data.values('ingredients__name', 'ingredients__measurement_unit').annotate(amount=Sum('amount'))
         lines = [
-            [item_key[0], item_key[1], str(amount)]
-            for item_key, amount in item_amounts.items()
+            [item['ingredients__name'], item['ingredients__measurement_unit'], str(item['amount'])]
+            for item in cart_data
         ]
+        # item_amounts = defaultdict(float)
+        # for elem in cart_data:
+        #     item_key = (
+        #         elem.ingredients.name,
+        #         elem.ingredients.measurement_unit
+        #     )
+        #     item_amounts[item_key] += elem.amount
+        # lines = [
+        #     [item_key[0], item_key[1], str(amount)]
+        #     for item_key, amount in item_amounts.items()
+        # ]
         formated_response = []
         promo = 'Список покупок'
         formated_response.append(promo)
