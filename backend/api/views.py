@@ -220,10 +220,10 @@ class RecipeModelViewSet(ModelViewSet):
             for item in cart_data
         ]
         formated_response = []
-        promo = 'Список покупок'
+        promo = 'Список покупок\n'
         formated_response.append(promo)
         for line in lines:
-            formated_line = f'\n{line[0]} ({line[1]}) - {line[2]}\n'
+            formated_line = f'{line[0]} ({line[1]}) - {line[2]}\n'
             formated_response.append(formated_line)
         filename = 'список_покупок.txt'
         response = HttpResponse(formated_response, content_type='text/plain')
