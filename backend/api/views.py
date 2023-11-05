@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Self
 
 from django.contrib.auth import get_user_model
@@ -220,17 +219,6 @@ class RecipeModelViewSet(ModelViewSet):
             ]
             for item in cart_data
         ]
-        # item_amounts = defaultdict(float)
-        # for elem in cart_data:
-        #     item_key = (
-        #         elem.ingredients.name,
-        #         elem.ingredients.measurement_unit
-        #     )
-        #     item_amounts[item_key] += elem.amount
-        # lines = [
-        #     [item_key[0], item_key[1], str(amount)]
-        #     for item_key, amount in item_amounts.items()
-        # ]
         formated_response = []
         promo = 'Список покупок'
         formated_response.append(promo)
