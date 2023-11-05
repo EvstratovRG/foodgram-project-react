@@ -114,7 +114,7 @@ class RecipeModelViewSet(ModelViewSet):
     serializer_class = RecipeSerializer
     pagination_class = Pagination
     permission_classes = (
-        ReadOnlyPermission | IsAuthorPermission | IsAdminUser,
+        ReadOnlyPermission | IsAuthorPermission,
     )
     filter_backends = [DjangoFilterBackend]
     filterset_class = TagFilter
